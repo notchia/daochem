@@ -1,7 +1,7 @@
 from django.db import models
 
-from database.models.base import _STR_KWARGS
-from database.models.base import BlockchainAddress, BlockchainTransaction
+from daochem.database.models.base import _STR_KWARGS
+from daochem.database.models.base import BlockchainAddress, BlockchainTransaction
 
 class Dao(models.Model):
     name = models.CharField()

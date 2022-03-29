@@ -1,7 +1,7 @@
 from django.db import models
 
-from database.models.base import _STR_KWARGS
-from database.models.base import BlockchainAddress, BlockchainTransaction
+from daochem.database.models.base import _STR_KWARGS
+from daochem.database.models.base import BlockchainAddress, BlockchainTransaction
 
 _STR_KWARGS = {'max_length': 200, 'null': True}
 
@@ -14,6 +14,6 @@ class FactoryContract(BlockchainAddress):
 
 
 class FactoryContractTransaction(BlockchainTransaction):
-    factory_contract = FactoryContract
+    factory_contract = models.ForeignKey(FactoryContract, on_delete=models.CASCADE)
 
     "factory_contract_transactions"

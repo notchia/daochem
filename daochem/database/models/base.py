@@ -16,8 +16,8 @@ class BlockchainAddress(models.Model):
 
 
 class BlockchainTransaction(models.Model):
-    from_address = models.ForeignKey(BlockchainAddress)
-    to_address = models.ForeignKey(BlockchainAddress)
+    from_address = models.ForeignKey(BlockchainAddress, on_delete=models.CASCADE)
+    to_address = models.ForeignKey(BlockchainAddress, on_delete=models.CASCADE)
     function_call = models.JSONField()
     contracts_created = models.ManyToManyField(BlockchainAddress)
 

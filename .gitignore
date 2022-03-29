@@ -130,3 +130,6 @@ dmypy.json
 
 # Temporary files
 tmp/
+
+# Certificate
+ca-certificate.crt

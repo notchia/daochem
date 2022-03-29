@@ -15,9 +15,15 @@ class Dao(models.Model):
     class Meta:
         db_table = "daos"
 
+    def __str__(self):
+        return self.name
+
 
 class DaoFramework(models.Model):
     name = models.CharField(**_STR_KWARGS)
 
     class Meta:
         db_table = "dao_frameworks"
+    
+    def __str__(self):
+        return self.name

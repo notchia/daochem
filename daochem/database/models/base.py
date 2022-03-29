@@ -12,6 +12,10 @@ class BlockchainAddress(models.Model):
     class Meta:
         db_table = "blockchain_addresses"
 
+    def __str__(self):
+        name = self.ens if self.ens is not None else self.address
+        return name
+
 
 class BlockchainTransaction(models.Model):
     transaction_id = models.CharField(primary_key=True, max_length=200, default="0.0")
@@ -35,3 +39,5 @@ class BlockchainTransaction(models.Model):
     class Meta:
         abstract = True
 
+    def __str__(self):
+        return self.transaction_id

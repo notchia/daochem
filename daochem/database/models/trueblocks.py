@@ -18,6 +18,9 @@ class FactoryContract(BlockchainAddress):
     class Meta:
         db_table = "factory_contracts"
 
+    def __str__(self):
+        return self.name
+
 
 class FactoryContractTransaction(BlockchainTransaction):
     factory_contract = models.ForeignKey(
@@ -30,3 +33,6 @@ class FactoryContractTransaction(BlockchainTransaction):
 
     class Meta:
         db_table = "factory_contract_transactions"
+
+    def __str__(self):
+        return f"{self.transaction_id} ({self.factory_contract.name})"

@@ -12,6 +12,12 @@ class Dao(models.Model):
         BlockchainAddress,
         related_name='belongs_to') # TODO: figure out if through and through_fields kwargs are useful here
 
+    class Meta:
+        db_table = "daos"
+
 
 class DaoFramework(models.Model):
     name = models.CharField(**_STR_KWARGS)
+
+    class Meta:
+        db_table = "dao_frameworks"

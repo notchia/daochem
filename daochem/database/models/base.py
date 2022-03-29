@@ -4,7 +4,7 @@ _STR_KWARGS = {'max_length': 200, 'null': True}
 
 
 class BlockchainAddress(models.Model):
-    address = models.CharField(**_STR_KWARGS)
+    address = models.CharField(primary_key=True, max_length=200, default="0x0")
     ens = models.CharField(**_STR_KWARGS)
     url = models.URLField(**_STR_KWARGS) # TODO: write function that creates Etherscan address for it if not provided
     #chain = models.CharField(_STR_KWARGS) Add for multi-chain support
@@ -14,7 +14,7 @@ class BlockchainAddress(models.Model):
 
 
 class BlockchainTransaction(models.Model):
-    transaction_id = models.CharField(**_STR_KWARGS)
+    transaction_id = models.CharField(primary_key=True, max_length=200, default="0.0")
     transaction_hash = models.CharField(**_STR_KWARGS)
     block = models.PositiveIntegerField()
     from_address = models.ForeignKey(

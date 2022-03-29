@@ -1,17 +1,23 @@
 from django.db import models
 
 from daochem.database.models.base import _STR_KWARGS
-from daochem.database.models.base import BlockchainAddress, BlockchainTransaction
+from daochem.database.models.base import BlockchainAddress
+
 
 class Dao(models.Model):
-    name = models.CharField()
+    name = models.CharField(**_STR_KWARGS)
     website = models.URLField()
-    governance_addresses = models.ManyToManyField(BlockchainAddress) # TODO: figure out if through and through_fields kwargs are useful here
-
-
-class GovernanceFramework(models.Model):
-    factory_name = models.CharField(**_STR_KWARGS)
+    twitter = models.URLField()
+    governance_addresses = models.ManyToManyField(
+        BlockchainAddress,
+        related_name='belongs_to') # TODO: figure out if through and through_fields kwargs are useful here
 
     class Meta:
-        abstract = True
-        db_table = "factory_contract"
+        db_table = "daos"
+
+
+class DaoFramework(models.Model):
+    name = models.CharField(**_STR_KWARGS)
+
+    class Meta:
+        db_table = "dao_frameworks"

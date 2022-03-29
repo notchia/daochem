@@ -16,6 +16,9 @@ from dotenv import load_dotenv
 
 load_dotenv(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../.env'))
 
+if not os.path.isdir('tmp'):
+    os.mkdir('tmp')
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -41,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'daochem.database.apps.DaochemConfig'
 ]
 
 MIDDLEWARE = [

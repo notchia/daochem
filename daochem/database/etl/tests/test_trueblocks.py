@@ -79,7 +79,36 @@ def test_parse_chifra_trace_result():
     print("Passed test parse_chifra_trace_result")
 
 
+def test_save_chifra_trace_result():
+    tb = trueblocks.TrueblocksHandler()
+
+    testQuery_list = {
+        'function': 'list', 
+        'value': '0x7378ad1ba8f3c8e64bbb2a04473edd35846360f1', 
+        'postprocess': "| cut -f2,3 | tr '\t' '.' | grep -v blockNumber"
+    }
+    cmd = tb._build_chifra_command(testQuery_list)
+    txIds = tb._run_chifra(cmd, parse_as='lines')
+    testQuery_trace = {
+        'function': 'traces', 
+        'value': txIds, 
+        'format': 'json',
+        'args': ['articulate']
+    }    
+    cmd = tb._build_chifra_command(testQuery_trace)
+    result = tb._run_chifra(cmd, parse_as='json')
+    assert result is not None, "No result returned; error encountered"
+    assert isinstance(result, dict), f"Expected list, not {type(result)}"
+    
+    parsed = tb._transform_chifra_trace_result(result)
+    assert len(parsed) == len(txIds), "Did not get traces of all transactions"
+
+    tb._upsert_transactions(parsed)    
+    print("Passed test save_chifra_trace_result")
+
+
 if __name__ == "__main__":
     #test_build_chifra_command()
     #test_run_chifra()
-    test_parse_chifra_trace_result()
+    #test_parse_chifra_trace_result()
+    test_save_chifra_trace_result()

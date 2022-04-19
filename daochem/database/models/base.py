@@ -18,7 +18,7 @@ class BlockchainAddress(models.Model):
 
 class SmartContract(BlockchainAddress):
     name = models.CharField(**_STR_KWARGS)
-    abi = models.JSONField()
+    abi = models.JSONField(default=dict, null=True)
 
     class Meta:
         db_table = "blockchain_contracts"
@@ -49,10 +49,11 @@ class BlockchainTransaction(models.Model):
         related_query_name="%(app_label)s_%(class)ss_to"
     )
     value = models.FloatField()
-    articulated_trace = models.JSONField(default=dict)
+    articulated_trace = models.JSONField(default=dict, null=True)
     contracts_created = models.ManyToManyField(
         BlockchainAddress,
-        related_name='created_by_transaction')
+        related_name='created_by_transaction'
+    )
 
     class Meta:
         db_table = "blockchain_transactions"

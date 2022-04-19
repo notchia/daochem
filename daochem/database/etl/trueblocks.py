@@ -9,8 +9,9 @@ from django.db import transaction
 from json import JSONDecodeError
 
 import utils.strings as s2s
-import daochem.database.models.trueblocks as tb
-from utils.files import load_json
+import daochem.database.models.trueblocks as tbmodel
+import daochem.database.models.base as basemodel
+from utils.strings import camel_to_snake
 
 
 class TrueblocksHandler:
@@ -169,17 +170,18 @@ class TrueblocksHandler:
         # Group traces by transaction hash and extract relevant information
         uniqueTxs = list(set([trace['transactionId'] for trace in data]))
         for txId in uniqueTxs:
-            txData = {'transactionId': txId}
+            txData = {'transaction_id': txId}
             traces = [t for t in data if t['transactionId'] == txId]
 
             # Get data on originating transaction
             _origin = [t for t in traces if t["traceAddress"] is None]
             if len(_origin) == 1:
                 origin = _origin[0]
-                for key in ['transactionHash', 'blockNumber', 'type', 'articulatedTrace']:
-                    txData[key] = origin.get(key)
-                for key in ['from', 'to', 'value']:
-                    txData[key] = origin['action'][key]
+                for key in ['transactionHash', 'blockNumber', 'articulatedTrace']:
+                    txData[camel_to_snake(key)] = origin.get(key)
+                for key in ['from', 'to']:
+                    txData[f"{key}_address"] = origin['action'][key]
+                txData['value'] = origin['action']['value']
             else:
                 logging.warning(f"Found {len(_origin)} traces with no traceAddress for txn {txId}; expected 1")
 
@@ -189,25 +191,44 @@ class TrueblocksHandler:
             for trace in _creation:
                 address = trace['result']['newContract']
                 contractsCreated.append(address)
-            txData['contractsCreated'] = contractsCreated
+            txData['contracts_created'] = contractsCreated
 
             # Add transaction to list
             txList.append(txData)
 
         return txList
 
-    def _upload_to_db(self):
-        """Upload all blockchain transactions in file 
-        TODO: check if transaction.atomic() is the right function here..."""
+    def _upsert_transactions(self, dataDicts):
+        """Upload all blockchain transactions in file"""
 
-        dataDicts = self._transform_data()
-        for d in dataDicts:
-            with transaction.atomic():    
-                self._upload_record(d)
+        with transaction.atomic():
+            for d in dataDicts:
+                self._upsert_transaction(d)
 
-    def _upload_record(self, record):
-        """Upload single transaction in file
-        TODO: Upload supplementary records (e.g., addresses) if they're not yet in the db"""
-    
-        # tb.FactoryContractTransaction.objects.update_or_create(record)
-        pass
+    def _upsert_transaction(self, recordDict):
+        """Create new transaction from dictionary of model parameters"""
+
+        if recordDict.get('factory') is not None:
+            _model = tbmodel.DaoFactoryContractTransaction
+        else:
+            _model = basemodel.BlockchainTransaction
+
+        if recordDict is not None and recordDict != {}:
+            # Create smart contract record for from and to addresses if they doesn't already exist
+            for addressType in ['from_address', 'to_address']:
+                value = recordDict[addressType]
+                addressObj = basemodel.BlockchainAddress.objects.update_or_create(address=value)[0]
+                addressObj.save()
+                recordDict[addressType] = basemodel.BlockchainAddress.objects.get(pk=value)
+
+            # Create smart contract record for each created contract only if it doesn't already exist
+            contractsCreated_orig = recordDict.pop('contracts_created', [])
+            for c in contractsCreated_orig:
+                contractObj = basemodel.SmartContract.objects.update_or_create(address=c)[0]
+                contractObj.save()
+            contractsCreated = [basemodel.SmartContract.objects.get(pk=c) for c in contractsCreated_orig]
+            
+            # Create smart contract 
+            obj = _model.objects.update_or_create(**recordDict)[0]
+            obj.save()
+            obj.contracts_created.set(contractsCreated)

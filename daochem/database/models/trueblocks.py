@@ -5,7 +5,7 @@ from daochem.database.models.base import SmartContract, BlockchainTransaction
 
 
 class DaoFramework(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, default='not specified')
     website = models.URLField(**_STR_KWARGS)
     github = models.URLField(**_STR_KWARGS)
 
@@ -22,7 +22,7 @@ class DaoFactoryContract(SmartContract):
         on_delete=models.CASCADE,
         related_name='factories'
     )
-    version = models.CharField(max_length=200)
+    version = models.CharField(max_length=200, default='not specified')
 
     class Meta:
         db_table = "dao_factory_contracts"

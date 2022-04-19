@@ -35,7 +35,7 @@ class SmartContract(BlockchainAddress):
 class BlockchainTransaction(models.Model):
     transaction_id = models.CharField(primary_key=True, max_length=200, default="0.0")
     transaction_hash = models.CharField(**_STR_KWARGS)
-    block = models.PositiveIntegerField()
+    block_number = models.PositiveIntegerField()
     from_address = models.ForeignKey(
         BlockchainAddress, 
         on_delete=models.CASCADE, 

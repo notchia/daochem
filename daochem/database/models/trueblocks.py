@@ -1,32 +1,45 @@
 from django.db import models
 
 from daochem.database.models.base import _STR_KWARGS
-from daochem.database.models.base import BlockchainAddress, BlockchainTransaction
-from daochem.database.models.daos import DaoFramework
-
-_STR_KWARGS = {'max_length': 200, 'null': True}
+from daochem.database.models.base import SmartContract, BlockchainTransaction
 
 
-class FactoryContract(BlockchainAddress):
-    name = models.CharField(**_STR_KWARGS)
+class DaoFramework(models.Model):
+    name = models.CharField(max_length=200)
+    website = models.URLField(**_STR_KWARGS)
+    github = models.URLField(**_STR_KWARGS)
+
+    class Meta:
+        db_table = "dao_frameworks"
+    
+    def __str__(self):
+        return self.name
+
+
+class DaoFactoryContract(SmartContract):
     dao_framework = models.ForeignKey(
         DaoFramework, 
         on_delete=models.CASCADE,
-        related_name='contracts'
+        related_name='factories'
+    )
+    version = models.CharField(max_length=200)
+
+    class Meta:
+        db_table = "dao_factory_contracts"
+
+    def __str__(self):
+        return f"{self.dao_framework.name}, version {self.version}"
+
+
+class DaoFactoryContractTransaction(BlockchainTransaction):
+    factory_contract = models.ForeignKey(
+        DaoFactoryContract, 
+        on_delete=models.CASCADE,
+        related_name='transactions'
     )
 
     class Meta:
-        db_table = "factory_contracts"
+        db_table = "dao_factory_transactions"
 
-
-class FactoryContractTransaction(BlockchainTransaction):
-    factory_contract = models.ForeignKey(
-        FactoryContract, 
-        on_delete=models.CASCADE,
-        related_name='transactions')
-    contracts_created = models.ManyToManyField(
-        BlockchainAddress,
-        related_name='created_by_transaction')
-
-    class Meta:
-        db_table = "factory_contract_transactions"
+    def __str__(self):
+        return f"{self.transaction_id} ({self.factory_contract.name})"

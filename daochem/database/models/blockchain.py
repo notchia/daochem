@@ -14,8 +14,8 @@ class BlockchainAddress(models.Model):
 
     def __str__(self):
         name = self.ens if self.ens is not None else self.address
-        #if self.contract_name is not None:
-        #    name += f" ({self.contract_name})"
+        if self.contract_name is not None:
+            name += f" ({self.contract_name})"
         return name
 
     def etherscan_url(self):
@@ -69,7 +69,7 @@ class DaoFactory(models.Model):
         related_name='factories'
     )
     version = models.CharField(max_length=200, default='not specified')
-    contract = models.ForeignKey(
+    contract_address = models.ForeignKey(
         BlockchainAddress,
         on_delete=models.CASCADE,
         related_name="related_to_factory",

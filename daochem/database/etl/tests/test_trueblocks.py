@@ -1,6 +1,6 @@
 import os
 import json
-from daochem.database.etl import trueblocks
+from daochem.database.etl.trueblocks import TrueblocksHandler
 
 
 def test_build_chifra_command():
@@ -23,7 +23,7 @@ def test_build_chifra_command():
         }
     ]
 
-    tb = trueblocks.TrueblocksHandler()
+    tb = TrueblocksHandler()
     for i, q in enumerate(testQueries):
         assert tb._build_chifra_command(q['args']) == q['result']
         print(f"Passed test build_chifra_command {i}")
@@ -37,7 +37,7 @@ def test_run_chifra():
         'postprocess': "| cut -f2,3 | tr '\t' '.' | grep -v blockNumber"
     }
     
-    tb = trueblocks.TrueblocksHandler()
+    tb = TrueblocksHandler()
     cmd = tb._build_chifra_command(testQuery)
     result = tb._run_chifra(cmd, parse_as='lines')
 
@@ -50,7 +50,7 @@ def test_run_chifra():
 
 def test_parse_chifra_trace_result():
 
-    tb = trueblocks.TrueblocksHandler()
+    tb = TrueblocksHandler()
 
     testQuery_list = {
         'function': 'list', 
@@ -80,7 +80,7 @@ def test_parse_chifra_trace_result():
 
 
 def test_save_chifra_trace_result():
-    tb = trueblocks.TrueblocksHandler()
+    tb = TrueblocksHandler()
 
     testQuery_list = {
         'function': 'list', 
@@ -100,10 +100,10 @@ def test_save_chifra_trace_result():
     assert result is not None, "No result returned; error encountered"
     assert isinstance(result, dict), f"Expected list, not {type(result)}"
     
-    parsed = tb._transform_chifra_trace_result(result)
+    parsed = tb._transform_chifra_trace_result(result, factory=testQuery_list['value'])
     assert len(parsed) == len(txIds), "Did not get traces of all transactions"
 
-    tb._upsert_transactions(parsed)    
+    tb._insert_transactions(parsed)    
     print("Passed test save_chifra_trace_result")
 
 

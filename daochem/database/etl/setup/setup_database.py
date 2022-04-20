@@ -3,18 +3,18 @@ import pandas as pd
 from django.db import transaction
 from django.db.models import Q
 
-import daochem.database.models.trueblocks as tb
+from daochem.database.models import blockchain
 
 
 SETUP_DIR = os.path.dirname(os.path.abspath(__file__))
 FRAMEWORK_DICT = {
     'table': "dao_frameworks",
-    'model': tb.DaoFramework,
+    'model': blockchain.DaoFramework,
     'filepath': os.path.join(SETUP_DIR, "dao_frameworks.csv"),
 }
 FACTORY_DICT = {
     'table': "dao_factory_contracts",
-    'model': tb.DaoFactoryContract,
+    'model': blockchain.DaoFactory,
     'filepath': os.path.join(SETUP_DIR, "dao_factories.csv"),
 }
 
@@ -33,7 +33,6 @@ def setup_dao_frameworks():
         for index, row in df.iterrows():
             data = row.to_dict()
             obj = model.objects.create(**data)
-            print(obj)
             obj.save()
 
 
@@ -50,13 +49,20 @@ def setup_dao_factories():
         df = pd.read_csv(filepath, index_col=None)
         for index, row in df.iterrows():
             data = row.to_dict()
-            data['dao_framework_id'] = tb.DaoFramework.objects.get(Q(name=data.pop('framework'))).id
+            data['dao_framework_id'] = blockchain.DaoFramework.objects.get(Q(name=data.pop('framework'))).id
+            # Create BlockchainAddress entry first
+            ba = blockchain.BlockchainAddress.objects.create(
+                address=data['address'],
+                contract_name=data.pop('name')
+            )
+            ba.save()
+            data['contract_address_id'] = data.pop('address')
             print(data)
             obj = model.objects.create(**data)
-            print(obj)
             obj.save()
 
 
 if __name__ == "__main__":
-    #setup_dao_frameworks()
+    # RUN ONCE ONLY! Will create duplicate entries and then encounter uniqueness errors if run again
+    setup_dao_frameworks()
     setup_dao_factories()

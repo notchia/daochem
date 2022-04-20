@@ -1,16 +1,12 @@
 import os
-import re
 import json
-import time
 import subprocess
 import logging
-from datetime import datetime
 from django.db import transaction
+from django.db.models import Q
 from json import JSONDecodeError
 
-import utils.strings as s2s
-import daochem.database.models.trueblocks as tbmodel
-import daochem.database.models.base as basemodel
+from daochem.database.models import blockchain
 from utils.strings import camel_to_snake
 
 
@@ -161,7 +157,7 @@ class TrueblocksHandler:
         blockNumber, txIndex = txId.split('.')
         return {'blockNumber': blockNumber, 'transactionIndex': txIndex}
 
-    def _transform_chifra_trace_result(self, result):
+    def _transform_chifra_trace_result(self, result, factory=None):
         """Return list of nested dictionaries corresponding to unique transactions records"""
         txList = []
         data = result['data']
@@ -193,42 +189,62 @@ class TrueblocksHandler:
                 contractsCreated.append(address)
             txData['contracts_created'] = contractsCreated
 
+            # Link to factory if provided
+            if factory is not None:
+                txData['factory'] = factory
+
             # Add transaction to list
             txList.append(txData)
 
         return txList
 
-    def _upsert_transactions(self, dataDicts):
+    def _insert_transactions(self, dataDicts):
         """Upload all blockchain transactions in file"""
 
         with transaction.atomic():
             for d in dataDicts:
-                self._upsert_transaction(d)
+                print(d['transaction_id'])
+                self._insert_transaction(d)
 
-    def _upsert_transaction(self, recordDict):
+    def _insert_transaction(self, recordDict):
         """Create new transaction from dictionary of model parameters"""
 
+        if recordDict is None or recordDict == {}:
+            return
+        
+        try:
+            blockchain.BlockchainTransaction.objects.get(pk=recordDict['transaction_id'])
+            logging.debug(f"Skipping transaction {recordDict['transaction_id']} already in database")
+            return
+        except blockchain.BlockchainTransaction.DoesNotExist:
+            pass
+
+        print("Hmm...")
+
+        factory = None
         if recordDict.get('factory') is not None:
-            _model = tbmodel.DaoFactoryContractTransaction
-        else:
-            _model = basemodel.BlockchainTransaction
+            factory = recordDict.pop('factory')
+           
+        # Create smart contract record for from and to addresses if they doesn't already exist
+        for addressType in ['from_address', 'to_address']:
+            value = recordDict[addressType]
+            addressObj = blockchain.BlockchainAddress.objects.update_or_create(address=value)[0]
+            addressObj.save()
+            recordDict[addressType] = blockchain.BlockchainAddress.objects.get(pk=value)
 
-        if recordDict is not None and recordDict != {}:
-            # Create smart contract record for from and to addresses if they doesn't already exist
-            for addressType in ['from_address', 'to_address']:
-                value = recordDict[addressType]
-                addressObj = basemodel.BlockchainAddress.objects.update_or_create(address=value)[0]
-                addressObj.save()
-                recordDict[addressType] = basemodel.BlockchainAddress.objects.get(pk=value)
+        # Create smart contract record for each created contract only if it doesn't already exist
+        contractsCreated_orig = recordDict.pop('contracts_created', [])
+        for c in contractsCreated_orig:
+            contractObj = blockchain.BlockchainAddress.objects.update_or_create(address=c)[0]
+            contractObj.save()
+        contractsCreated = [blockchain.BlockchainAddress.objects.get(pk=c) for c in contractsCreated_orig]
+        
+        # Create smart contract 
+        tx = blockchain.BlockchainTransaction.objects.create(**recordDict)[0]
+        tx.save()
+        tx.contracts_created.set(contractsCreated)
 
-            # Create smart contract record for each created contract only if it doesn't already exist
-            contractsCreated_orig = recordDict.pop('contracts_created', [])
-            for c in contractsCreated_orig:
-                contractObj = basemodel.SmartContract.objects.update_or_create(address=c)[0]
-                contractObj.save()
-            contractsCreated = [basemodel.SmartContract.objects.get(pk=c) for c in contractsCreated_orig]
-            
-            # Create smart contract 
-            obj = _model.objects.update_or_create(**recordDict)[0]
-            obj.save()
-            obj.contracts_created.set(contractsCreated)
+        # Add transaction to factory contract list
+        if factory is not None:
+            fac = blockchain.DaoFactory.objects.get(Q(contract_address=factory))
+            fac.related_transactions.add(tx)

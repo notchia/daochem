@@ -1,8 +1,10 @@
 from django.db import models
 
-from daochem.database.models.base import _STR_KWARGS
-from daochem.database.models.base import BlockchainAddress
-from daochem.database.models.trueblocks import DaoFactoryContractTransaction
+
+from daochem.database.models.blockchain import BlockchainAddress
+
+
+_STR_KWARGS = {'max_length': 200, 'null': True}
 
 
 class Dao(models.Model):
@@ -10,15 +12,10 @@ class Dao(models.Model):
     website = models.URLField(**_STR_KWARGS)
     twitter = models.URLField(**_STR_KWARGS)
     deepdao = models.URLField(**_STR_KWARGS)
+    boardroom = models.URLField(**_STR_KWARGS)
     governance_addresses = models.ManyToManyField(
         BlockchainAddress,
-        related_name='belongs_to') # TODO: figure out if through and through_fields kwargs are useful here
-    created_by_transaction = models.ForeignKey(
-        DaoFactoryContractTransaction,
-        on_delete=models.CASCADE,
-        null=True,
-        related_name="%(app_label)s_%(class)s_created",
-        related_query_name="%(app_label)s_%(class)ss_created"
+        related_name='belongs_to_dao'
     )
 
     class Meta:
@@ -27,3 +24,5 @@ class Dao(models.Model):
     def __str__(self):
         return self.name
 
+    def normalized_name(self):
+        return self.name.lower().replace(" ", "")

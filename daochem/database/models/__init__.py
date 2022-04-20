@@ -1,4 +1,4 @@
 from .daos import *
-from .trueblocks import *
+from .blockchain import *
 
 # TODO: update with actual models

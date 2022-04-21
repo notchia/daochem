@@ -1,10 +1,13 @@
 argh
 Django
 matplotlib
+nltk
 numpy
 pandas
 psycopg2-binary
 python-dotenv
 requests
+scikit-learn
 seaborn
+tweepy
 web3

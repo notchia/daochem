@@ -219,8 +219,6 @@ class TrueblocksHandler:
         except blockchain.BlockchainTransaction.DoesNotExist:
             pass
 
-        print("Hmm...")
-
         factory = None
         if recordDict.get('factory') is not None:
             factory = recordDict.pop('factory')
@@ -240,7 +238,7 @@ class TrueblocksHandler:
         contractsCreated = [blockchain.BlockchainAddress.objects.get(pk=c) for c in contractsCreated_orig]
         
         # Create smart contract 
-        tx = blockchain.BlockchainTransaction.objects.create(**recordDict)[0]
+        tx = blockchain.BlockchainTransaction.objects.create(**recordDict)
         tx.save()
         tx.contracts_created.set(contractsCreated)
 

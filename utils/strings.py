@@ -1,4 +1,11 @@
 import re
+from nltk.tokenize import sent_tokenize, word_tokenize, RegexpTokenizer
+
+
+def tokenize(text):
+    tokenizer = RegexpTokenizer('\w+')
+    text_tokenized = tokenizer.tokenize(text.lower())
+    return text_tokenized
 
 
 def camel_to_snake(s):

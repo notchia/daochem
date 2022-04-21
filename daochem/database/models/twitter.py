@@ -34,13 +34,19 @@ class TwitterAccount(models.Model):
 
 class Tweet(models.Model):
     id = models.CharField(primary_key=True, max_length=30, default="0")
-    text = models.CharField(max_length=280, default="")
+    author = models.ForeignKey(
+        TwitterAccount,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="tweets"
+    )
+    text = models.CharField(max_length=300, default="")
     created_at = models.DateField()
     like_count = models.PositiveSmallIntegerField() # For tweet, not row
     reply_count = models.PositiveSmallIntegerField()
     retweet_count = models.PositiveSmallIntegerField()
     urls = models.CharField(max_length=200, default="") # Space-separated urls, if multiple
-    last_updated = models.DateField(auto_now=True)
+    last_updated = models.DateTimeField(auto_now=True)
 
     @property
     def description_tokenized(self):

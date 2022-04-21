@@ -39,6 +39,7 @@ class Tweet(models.Model):
     like_count = models.PositiveSmallIntegerField() # For tweet, not row
     reply_count = models.PositiveSmallIntegerField()
     retweet_count = models.PositiveSmallIntegerField()
+    urls = models.CharField(max_length=200, default="") # Space-separated urls, if multiple
     last_updated = models.DateField(auto_now=True)
 
     @property

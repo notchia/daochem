@@ -1,8 +1,10 @@
 import os
 import tweepy
 from pprint import pprint
+from django.db.models import Q
 
 from daochem.database.etl.twitter import TwitterHandler
+from daochem.database.models.daos import Dao
 
 
 def test_twitter_credentials():
@@ -44,6 +46,27 @@ def test_transforms():
     pprint(transformed)
 
 
+def test_twitter_account_add():
+
+    tw = TwitterHandler()
+    dao = Dao.objects.get(Q(name='MolochDAO'))
+    data = tw.get_dao_user_info(dao)
+    transformed = tw._transform_user_info(data)
+    tw._insert_user(transformed)
+
+
+def test_tweet_add():
+    tw = TwitterHandler()
+    dao = Dao.objects.get(Q(name='MolochDAO'))
+    data = tw.get_dao_tweets(dao.twitter.username)
+    transformed = tw._transform_tweets(data)
+    tw._insert_tweets(transformed)    
+
+
 if __name__ == "__main__":
     #test_twitter_credentials()
-    test_transforms()
+    #test_transforms()
+    #test_twitter_account_add()
+    #test_tweet_add()
+    tw = TwitterHandler()
+    tw.upsert_dao_tweets(Dao.objects.get(Q(name='MolochDAO')))

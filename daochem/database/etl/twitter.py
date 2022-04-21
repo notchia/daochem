@@ -1,14 +1,13 @@
 import os
-import json
-import subprocess
 import logging
 import tweepy
+from pprint import pprint
+from dateutil.parser import isoparse
 from django.db import transaction
 from django.db.models import Q
-from json import JSONDecodeError
 
 from daochem.database.models.daos import Dao
-
+from daochem.database.models.twitter import TwitterAccount, Tweet
 
 class TwitterHandler():
     KEYWORDS = ['dao', 'daos', 'proposal', 'proposals', 'snapshot', 'boardroom', 'vote', 'votes', 'voter', 'voting', 'govern', 'governance', 'governing']
@@ -20,7 +19,25 @@ class TwitterHandler():
             return_type=dict
         )
 
-    def get_dao_user_info(self, dao):
+    def upsert_dao_user_info(self, dao):
+        """Given Dao model object, insert or update its Twitter user information (description, metrics, etc.)"""
+        
+        response = self._get_dao_user_info(dao)
+        transformed = self._transform_user_info(response)
+        id = self._upsert_user(transformed)
+        if dao.twitter is None:
+            dao.twitter = id
+            dao.save()
+
+    def upsert_dao_tweets(self, dao):
+        """Given Dao model object, insert or update its Twitter user information (description, metrics, etc.)"""
+        
+        response = self._get_dao_tweets(dao)
+        transformed = self._transform_tweets(response)
+        pprint(transformed)
+        self._upsert_tweets(transformed)
+
+    def _get_dao_user_info(self, dao):
         """Given Dao model object, get its user information (description, metrics, etc.)"""
 
         if dao.twitter is None:
@@ -33,14 +50,14 @@ class TwitterHandler():
         
         return self._get_user_info(username)
 
-    def get_dao_tweets(self, dao, since_id=None):
+    def _get_dao_tweets(self, dao, since_id=None):
         """Given Dao model object, get its tweets"""
 
         if dao.twitter is None:
             return {}
-        id = Dao.twitter.id
+        id = dao.twitter.id
 
-        return self._get_tweets(self, id, since_id=since_id)
+        return self._get_tweets(id, since_id=since_id)
 
     def _get_user_info(self, username):
         """Get user information (description, metrics, etc.) given username"""
@@ -73,15 +90,17 @@ class TwitterHandler():
         transformed = {}        
         data = response['data']
 
-        for key in ['id', 'name', 'username', 'created_at', 'description', 'url']:
+        for key in ['id', 'name', 'username', 'description', 'url']:
             transformed[key] = data.get(key)
+
+        transformed['created_at'] = isoparse(data.get('created_at')).date()
 
         for metric in ['tweet_count', 'followers_count']:
             transformed[metric] = data['public_metrics'][metric]
 
         return transformed
 
-    def _transform_tweets(self, response):
+    def _transform_tweets(self, response, author_id=None):
         """Transform data (containing list of tweets) to match Tweet model"""
 
         transformedList = []   
@@ -89,6 +108,8 @@ class TwitterHandler():
             transformed = {}
             for key in ['id', 'text', 'created_at']:
                 transformed[key] = data.get(key)
+
+            transformed['created_at'] = isoparse(data.get('created_at'))
 
             for metric in ['like_count', 'reply_count', 'retweet_count']:
                 transformed[metric] = data['public_metrics'][metric]
@@ -99,7 +120,44 @@ class TwitterHandler():
             urls = list(set(urls)) # Sloppy mitigation of a tweepy (or twitter API?) bug where a single image URL is repeated when multiple images are embedded
             transformed['urls'] = " ".join(urls)
 
+            if data.get('author_id') is None:
+                transformed['author'] = author_id
+            else:
+                transformed['author'] = data['author_id']
+
             transformedList.append(transformed)
             
         return transformedList
 
+    def _upsert_user(self, userDict):
+        """Upload all blockchain transactions in file"""
+
+        with transaction.atomic():
+            user = TwitterAccount.objects.update_or_create(**userDict)[0]
+            user.save()
+
+        return user
+
+    def _upsert_tweets(self, tweets):
+        """Upload all blockchain transactions in file"""
+
+        with transaction.atomic():
+            for t in tweets:
+                self._upsert_tweet(t)
+
+    def _upsert_tweet(self, recordDict):
+        """Create new transaction from dictionary of model parameters"""
+
+        if recordDict is None or recordDict == {}:
+            return
+        
+        try:
+            tweet = Tweet.objects.get(pk=recordDict.pop('id'))
+            for key, value in recordDict.items():
+                setattr(tweet, key, value)
+            tweet.save()
+        except Tweet.DoesNotExist:
+            tweet = Tweet.objects.create(**recordDict)
+            tweet.save()
+
+        return tweet

@@ -2,10 +2,23 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.db.models import Q
 from daochem.database.models.blockchain import DaoFactory
+from daochem.database.models.daos import Dao
 
 
 def index(request):
-    return HttpResponse("Hello, world. You're at the DAOs index.")
+    """View function for home page of site."""
+
+    # Generate counts of some of the main objects
+    num_factories = DaoFactory.objects.count()
+    num_daos = Dao.objects.count()
+
+    context = {
+        'num_books': num_factories,
+        'num_instances': num_daos,
+    }
+
+    # Render the HTML template index.html with the data in the context variable
+    return render(request, 'index.html', context=context)
 
 
 def factory_contract_summary(request, contract_address):
@@ -16,3 +29,11 @@ def factory_contract_summary(request, contract_address):
     r_lines.append(f"Number of contract-creating transactions: {totalTransactions}")
     
     return HttpResponse("\n\n".join(r_lines))
+
+
+def factories(request):
+    context = {}
+
+    return render(request, 'factories.html', context)
+
+

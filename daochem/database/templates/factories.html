@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block page_content %}
+<h1>Projects</h1>
+<div class="container">
+{% for fac in factories %}
+    These are the results for the factory contract {{ fac.contract_address.contract_name }} for {{ fac.dao_framework.name }} version {{ fac.version }} at {{ fac.contract_address }}
+    Number of contract-creating transactions: {{ totalTransactions }}
+
+    {% endfor %}
+</div>
+{% endblock %}

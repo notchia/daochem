@@ -1,6 +1,8 @@
-from tkinter import CASCADE
+import os
 from django.db import models
 from django.db.models import Max
+from web3 import Web3, HTTPProvider
+from datetime import datetime
 
 _STR_KWARGS = {'max_length': 200, 'null': True}
 
@@ -10,6 +12,10 @@ class BlockchainAddress(models.Model):
     ens = models.CharField(**_STR_KWARGS)
     contract_name = models.CharField(**_STR_KWARGS)
     contract_abi = models.JSONField(default=dict, null=True)
+
+    @property
+    def etherscan_url(self):
+        return "https://etherscan.io/address/" + self.address
 
     def appears_in(self):
         """ Return QuerySet of all transactions in which the address appears
@@ -34,7 +40,6 @@ class BlockchainAddress(models.Model):
 
         return maxBlock
 
-
     class Meta:
         db_table = "blockchain_addresses"
 
@@ -43,9 +48,6 @@ class BlockchainAddress(models.Model):
         if self.contract_name is not None:
             name += f" ({self.contract_name})"
         return name
-
-    def etherscan_url(self):
-        return "https://etherscan.io/address/" + self.address
 
 
 class BlockchainTransaction(models.Model):
@@ -68,6 +70,17 @@ class BlockchainTransaction(models.Model):
         BlockchainAddress,
         related_name='created_by_transaction'
     )
+
+    @property
+    def timestamp(self):
+        try:
+            w3 = Web3(HTTPProvider(os.getenv('RPC_KEY')))
+            timestamp_unix = w3.eth.get_block(self.block_number).timestamp
+            timestamp = datetime.fromtimestamp(timestamp_unix)
+        except Exception as e:
+            print(e)
+            timestamp = None
+        return timestamp
 
     def contains_address(self, address):
         """Check if an address (string) appears anywhere in the transaction """

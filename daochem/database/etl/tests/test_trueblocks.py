@@ -1,6 +1,7 @@
 import os
 import json
 from daochem.database.etl.trueblocks import TrueblocksHandler
+from daochem.database.models.blockchain import BlockchainAddress, DaoFactory
 
 
 def test_build_chifra_command():
@@ -107,8 +108,17 @@ def test_save_chifra_trace_result():
     print("Passed test save_chifra_trace_result")
 
 
+def test_add_or_update_address_transactions():
+
+    # Test w/Aragon v0.6 address (has factory object attached)
+    tb = TrueblocksHandler()
+    addressObj = BlockchainAddress.objects.get(pk='0x595b34c93aa2c2ba0a38daeede629a0dfbdcc559')
+    tb.add_or_update_address_transactions(addressObj)
+
+
 if __name__ == "__main__":
     #test_build_chifra_command()
     #test_run_chifra()
     #test_parse_chifra_trace_result()
-    test_save_chifra_trace_result()
+    #test_save_chifra_trace_result()
+    test_add_or_update_address_transactions()

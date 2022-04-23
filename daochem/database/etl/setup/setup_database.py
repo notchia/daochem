@@ -62,7 +62,14 @@ def setup_dao_factories():
             obj.save()
 
 
+def setup_monitors():
+    for name in ['twitter', 'trueblocks', 'deepdao', 'boardroom']:
+        monitor = blockchain.EtlMonitor(name=name)
+        monitor.save()
+
+
 if __name__ == "__main__":
     # RUN ONCE ONLY! Will create duplicate entries and then encounter uniqueness errors if run again
     setup_dao_frameworks()
     setup_dao_factories()
+    setup_monitors()

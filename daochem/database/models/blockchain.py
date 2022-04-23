@@ -134,7 +134,7 @@ class DaoFactory(models.Model):
 
 class EtlMonitor(models.Model):
     name = models.CharField(primary_key=True, max_length=20, default="test")
-    last_scrape_time = models.DateTimeField()
+    last_scrape_time = models.DateTimeField(null=True)
     last_scrape_block = models.PositiveIntegerField(default=0) # TrueBlocks only
 
     class Meta:

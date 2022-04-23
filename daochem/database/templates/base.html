@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+
+<title>DAOchem</title>
+
+{% load static %}
+<link rel="stylesheet" href="{% static 'daochem.css' %}">
+<link rel="shortcut icon" type="image/png" href="{% static 'daochem.png' %}"/>
+<meta name="description" content="DAOchem">
+<meta name="author" content="DAOchem">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+</head>
+
+<body> 
+
+<header>
+	<h1>DAOchem</h1>
+</header>
+
+<nav class="nav">
+	<a href="{% url 'index' %}">home</a>
+    &nbsp;&nbsp;
+    <a href="https://github.com/notchia/daochem-backend/"><b>github</b></a>
+	&nbsp;&nbsp;
+	<a href="https://metagov.org/"><b>metagov</b></a>
+</nav>
+
+<main class="content">
+	{% block block_content %}
+    {% endblock %}
+</main>
+
+<footer class="footer">
+	<p>Find the source for this website on <a href="https://github.com/notchia/daochem-frontend"><b>github</b></a></p>
+</footer>
+
+</body>
+
+</html>

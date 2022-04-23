@@ -23,9 +23,9 @@
 <nav class="nav">
 	<a href="{% url 'index' %}">home</a>
     &nbsp;&nbsp;
-    <a href="https://github.com/notchia/daochem-backend/"><b>github</b></a>
-	&nbsp;&nbsp;
-	<a href="https://metagov.org/"><b>metagov</b></a>
+	<a href="{% url 'factories' %}">dao frameworks</a>
+    &nbsp;&nbsp;
+	<a href="{% url 'factories' %}">daos</a>
 </nav>
 
 <main class="content">
@@ -34,7 +34,11 @@
 </main>
 
 <footer class="footer">
-	<p>Find the source for this website on <a href="https://github.com/notchia/daochem-frontend"><b>github</b></a></p>
+	<p>For further information, check out: </p>
+	<ul>
+		<li><a href="https://github.com/notchia/daochem-backend"><b>the project on github</b></a>
+		<li><a href="https://metagov.org/"><b>our parent organization, metagov</b></a>
+	  </ul>
 </footer>
 
 </body>

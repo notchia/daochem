@@ -13,8 +13,8 @@ def index(request):
     num_daos = Dao.objects.count()
 
     context = {
-        'num_books': num_factories,
-        'num_instances': num_daos,
+        'num_factories': num_factories,
+        'num_daos': num_daos,
     }
 
     # Render the HTML template index.html with the data in the context variable
@@ -32,7 +32,9 @@ def factory_contract_summary(request, contract_address):
 
 
 def factories(request):
-    context = {}
+    context = {
+        'factories': DaoFactory.objects.all()
+    }
 
     return render(request, 'factories.html', context)
 

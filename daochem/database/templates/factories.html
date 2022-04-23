@@ -1,14 +1,19 @@
 {% extends "base.html" %}
 
-{% load static %}
+{% block block_content %}
+Some DAO frameworks allow DAO creators to create a DAO through a client interface. 
+In these cases, under the hood, there are factory contracts which deploy one or 
+more new smart contracts using the inputs given by the DAO creator, initializing 
+the on-chain governance infrastructure for the new DAO.
 
-{% block page_content %}
-<h1>Projects</h1>
-<div class="container">
+With a little digging through GitBooks and GitHub repos, we found a few of these:
+
 {% for fac in factories %}
-    These are the results for the factory contract {{ fac.contract_address.contract_name }} for {{ fac.dao_framework.name }} version {{ fac.version }} at {{ fac.contract_address }}
-    Number of contract-creating transactions: {{ totalTransactions }}
-
-    {% endfor %}
-</div>
+  <div class="card">
+    <div class="container">
+      <h2><b>{{ fac.dao_framework.name }} {{ fac.contract_address.contract_name }} version {{ fac.version }}</b></h2>
+      <p>Ethereum address: <a href="{{ fac.contract_address.etherscan_url }}">{{ fac.contract_address.address }}</a></p>
+    </div>
+  </div>
+  {% endfor %}
 {% endblock %}

@@ -1,4 +1,8 @@
+import os
 from django.db import models
+from django.db.models import Max
+from web3 import Web3, HTTPProvider
+from datetime import datetime
 
 _STR_KWARGS = {'max_length': 200, 'null': True}
 
@@ -9,6 +13,33 @@ class BlockchainAddress(models.Model):
     contract_name = models.CharField(**_STR_KWARGS)
     contract_abi = models.JSONField(default=dict, null=True)
 
+    @property
+    def etherscan_url(self):
+        return "https://etherscan.io/address/" + self.address
+
+    def appears_in(self):
+        """ Return QuerySet of all transactions in which the address appears
+        Uses related_names defined in BlockchainTransaction
+        """
+
+        txns = self.transactions_from.all()
+        txns.union(self.transactions_to.all())
+        txns.union(self.created_by_transaction.all())
+
+        return txns
+
+    def most_recent_appearance(self):
+        """Return block number of most recent appearance in transactions
+        
+        If not found, return 0"""
+
+        txns = self.appears_in()
+        maxBlock = txns.aggregate(Max('block_number')).get('block_number__max')
+        if maxBlock is None:
+            maxBlock = 0 # May be None for two different reasons, so this catches both
+
+        return maxBlock
+
     class Meta:
         db_table = "blockchain_addresses"
 
@@ -17,9 +48,6 @@ class BlockchainAddress(models.Model):
         if self.contract_name is not None:
             name += f" ({self.contract_name})"
         return name
-
-    def etherscan_url(self):
-        return "https://etherscan.io/address/" + self.address
 
 
 class BlockchainTransaction(models.Model):
@@ -42,6 +70,36 @@ class BlockchainTransaction(models.Model):
         BlockchainAddress,
         related_name='created_by_transaction'
     )
+
+    @property
+    def timestamp(self):
+        try:
+            w3 = Web3(HTTPProvider(os.getenv('RPC_KEY')))
+            timestamp_unix = w3.eth.get_block(self.block_number).timestamp
+            timestamp = datetime.fromtimestamp(timestamp_unix)
+        except Exception as e:
+            print(e)
+            timestamp = None
+        return timestamp
+
+    def contains_address(self, address):
+        """Check if an address (string) appears anywhere in the transaction """
+
+        addresFound = (
+            self.to_address.address == address or
+            self.from_address.address == address or
+            address in [c.address for c in self.contracts_created]
+        )
+
+        return addresFound
+
+    def is_internal(self):
+        """Return true if any contracts were created, else false"""
+
+        n_created = self.contracts_created.count()
+        is_internal = True if n_created > 0 else False
+
+        return is_internal
 
     class Meta:
         db_table = "blockchain_transactions"
@@ -69,15 +127,16 @@ class DaoFactory(models.Model):
         related_name='factories'
     )
     version = models.CharField(max_length=200, default='not specified')
-    contract_address = models.ForeignKey(
+    contract_address = models.OneToOneField(
         BlockchainAddress,
-        on_delete=models.CASCADE,
-        related_name="related_to_factory",
+        on_delete=models.CASCADE
     )
     related_transactions = models.ManyToManyField(
         BlockchainTransaction,
         related_name='related_to_factory'
     )
+
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         db_table = "dao_factories"
@@ -85,3 +144,14 @@ class DaoFactory(models.Model):
     def __str__(self):
         return f"{self.dao_framework.name}, version {self.version}"
 
+
+class EtlMonitor(models.Model):
+    name = models.CharField(primary_key=True, max_length=20, default="test")
+    last_scrape_time = models.DateTimeField(null=True)
+    last_scrape_block = models.PositiveIntegerField(default=0) # TrueBlocks only
+
+    class Meta:
+        db_table = "etl_monitors"
+
+    def __str__(self):
+        return self.name

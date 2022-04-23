@@ -7,8 +7,8 @@
 	--color-medium: #8ae73e;
 	--color-medium-dark: #008383;
 	--color-dark: #272727;
-	--page-width: 800px;
-	--small-width: 600px;
+	--page-width: 1000px;
+	--small-width: 800px;
 }
 
 html, body {
@@ -23,8 +23,8 @@ body {
 	font-size: 100%;
 	background-color: var(--color-background);
 	color: var(--color-dark);
-	padding-left: 50px;
-	padding-right: 50px;
+	padding-left: 25px;
+	padding-right: 25px;
 	margin-left: auto;
 	margin-right: auto;
 	max-width: var(--page-width);
@@ -76,6 +76,11 @@ nav {
 	background-color: transparent;
 	text-decoration: none;
 }
+.nav a:visited {
+	color: var(--color-background);
+	background-color: transparent;
+	text-decoration: none;
+}
 .nav a:hover {
 	color: var(--color-background);
 	background: -webkit-linear-gradient(60deg, var(--color-medium) , var(--color-light));
@@ -106,6 +111,6 @@ a:link, a:visited {
 }
 a:hover {
 	color: var(--color-dark);
-	background-color: var(--color-highlight);
+	background-color: var(--color-light);
 	text-decoration: none;
 }

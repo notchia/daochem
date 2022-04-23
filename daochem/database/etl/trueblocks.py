@@ -2,9 +2,10 @@ import os
 import json
 import subprocess
 import logging
+from datetime import datetime
+from json import JSONDecodeError
 from django.db import transaction
 from django.db.models import Q
-from json import JSONDecodeError
 
 from daochem.database.models import blockchain
 from utils.strings import camel_to_snake
@@ -15,16 +16,91 @@ class TrueblocksHandler:
     e.g., `chifra traces --articulate --fmt json [addresses]` 
     """
 
-    def get_factory_contracts(self, params, kwargs_run=None, kwargs_parse=None):
-        """Build, run, and parse a chifra command from a query dictionary"""
-        cmd = self._build_chifra_command(params)
-        if kwargs_run is None:
-            kwargs_run = {}
-        result = self._run_chifra(cmd, **kwargs_run)
-        if kwargs_parse is None:
-            kwargs_parse = {}
-        parsed = self._parse_chifra_result(result, **kwargs_parse)
-        return result
+    def get_index_status(self):
+        """Check how up-to-date the index being used is"""
+        query_pins = {
+            'function': 'pins', 
+            'value': '--list', 
+            'postprocess': "| tail -n 1"
+        }
+        cmd = self._build_chifra_command(query_pins)
+        pin = self._run_chifra(cmd, parse_as='lines')[0]
+        lastPinnedBlock = pin.split()[0].split('-')[-1]
+
+        query_when = {
+            'function': 'when', 
+            'format': 'json',
+            'value': lastPinnedBlock, 
+        }
+        cmd = self._build_chifra_command(query_when)
+        info = self._run_chifra(cmd, parse_as='json')
+        lastPinnedTime = datetime.fromtimestamp(info['timestamp'])
+
+        status = {
+            'last_pinned_block': lastPinnedBlock,
+            'last_pinned_time': lastPinnedTime
+        }
+
+        return status
+
+    def add_or_update_address_transactions(self, addressObj, since_block=None, local_only=False):
+        """Get list of all transaction ids from index, then export trace 
+        
+        since_block options: 
+            - None: look for most recent appearance of block in |int block_number|False]
+        """
+
+        address = addressObj.address
+
+        fpath = os.path.join(os.getcwd(), f"tmp/trueblocks_{address}.json")
+        fpath_parsed = os.path.join(os.getcwd(), f"tmp/trueblocks_{address}_parsed.json")
+
+        if not os.path.isfile(fpath):
+            # Get list of all transaction IDs
+            query_list = {
+                'function': 'list', 
+                'value': address, 
+                'postprocess': "| cut -f2,3 | tr '\t' '.' | grep -v blockNumber"
+            }
+            cmd = self._build_chifra_command(query_list)
+            txIds = self._run_chifra(cmd, parse_as='lines')
+
+            # Filter transaction IDs for those since most recent appearance in chain
+            if since_block is not False:
+                if since_block is None:
+                    since_block = addressObj.most_recent_appearance()
+                else:
+                    since_block = str(since_block)
+
+                txIds = list(filter(lambda id: int(id.split('.')[0]) > since_block, txIds))
+
+            # Get all transaction traces
+            logging.info("Running chifra traces for list of tx ids...")
+            query_trace = {
+                'function': 'traces', 
+                'value': txIds, 
+                'format': 'json',
+                'args': ['articulate']
+            }  
+            cmd = self._build_chifra_command(query_trace)
+            result = self._run_chifra(cmd, parse_as='json', fpath=fpath)
+        else:
+            result = json.loads(fpath)
+        
+        # Transform to model format, associating with factory if necessary
+        factoryAddress = None
+        if hasattr(addressObj, 'daofactory'):
+            # TODO: check that this is actually catching this case!
+            factoryAddress = address
+        parsed = self._transform_chifra_trace_result(result, factory=factoryAddress)
+        
+        if local_only:
+            with open(fpath_parsed, 'w') as f:
+                json.dump(parsed, f, indent=4)
+        if not local_only:
+            # Insert transactions
+            logging.info("Adding transactions to database...")
+            self._insert_transactions(parsed)    
 
     def _run_chifra(self, command, mode='w', parse_as='json', fpath=None):
         """Call chifra command and return the output as a JSON object
@@ -206,6 +282,8 @@ class TrueblocksHandler:
                 print(d['transaction_id'])
                 self._insert_transaction(d)
 
+        logging.info(f'Added {len(dataDicts.keys)} transactions to database')
+
     def _insert_transaction(self, recordDict):
         """Create new transaction from dictionary of model parameters"""
 
@@ -225,7 +303,7 @@ class TrueblocksHandler:
            
         # Create smart contract record for from and to addresses if they doesn't already exist
         for addressType in ['from_address', 'to_address']:
-            value = recordDict[addressType]
+            value = recordDict.get(addressType, '0x0')
             addressObj = blockchain.BlockchainAddress.objects.update_or_create(address=value)[0]
             addressObj.save()
             recordDict[addressType] = blockchain.BlockchainAddress.objects.get(pk=value)
@@ -246,3 +324,4 @@ class TrueblocksHandler:
         if factory is not None:
             fac = blockchain.DaoFactory.objects.get(Q(contract_address=factory))
             fac.related_transactions.add(tx)
+    

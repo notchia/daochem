@@ -2,13 +2,12 @@ import os
 import json
 
 
-def load_json(path):
+def load_json(fpath):
     """Load JSON file"""
 
     r = {}
-
     try:
-        with open(path, 'r') as f:
+        with open(fpath, 'r') as f:
             r = json.load(f)
     except FileNotFoundError:
         raise
@@ -17,3 +16,11 @@ def load_json(path):
 
     return r
 
+
+def save_json(data, fpath):
+    """Save JSON file"""
+
+    with open(fpath, 'w') as f:
+        json.dump(data, f, indent=4)
+
+    return fpath

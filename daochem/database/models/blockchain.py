@@ -50,6 +50,33 @@ class BlockchainAddress(models.Model):
         return name
 
 
+class BlockchainTransactionTrace(models.Model):
+    id = models.CharField(primary_key=True, max_length=50, default="0.0.0")
+    from_address = models.ForeignKey(
+        BlockchainAddress, 
+        on_delete=models.CASCADE, 
+        related_name="traces_from"
+    )
+    to_address = models.ForeignKey(
+        BlockchainAddress, 
+        on_delete=models.CASCADE,
+        related_name="traces_to"
+    )
+
+    value = models.FloatField()
+    error = models.CharField(max_length=20, null=True)
+    compressed_trace = models.CharField(max_length=1000, null=True)
+    output = models.CharField(max_length=1000, null=True)
+    delegates = models.ForeignKey(
+        BlockchainAddress, 
+        on_delete=models.CASCADE,
+        related_name="delegate_for_trace"
+    )
+
+    class Meta:
+        db_table = "blockchain_traces"
+
+
 class BlockchainTransaction(models.Model):
     transaction_id = models.CharField(primary_key=True, max_length=20, default="0.0")
     transaction_hash = models.CharField(max_length=66, null=True)
@@ -65,10 +92,18 @@ class BlockchainTransaction(models.Model):
         related_name="transactions_to"
     )
     value = models.FloatField()
+    error = models.CharField(max_length=20, null=True)
     articulated_trace = models.JSONField(default=dict, null=True)
+    function_name = models.CharField(max_length=200, null=True)
+    function_inputs = models.JSONField(default=dict, null=True)
+    function_outpus = models.CharField(max_length=200, null=True) # List of values concatenated with spaces
     contracts_created = models.ManyToManyField(
         BlockchainAddress,
         related_name='created_by_transaction'
+    )
+    traces = models.ManyToManyField(
+        BlockchainTransactionTrace,
+        related_name='originating_from_transaction'
     )
 
     @property

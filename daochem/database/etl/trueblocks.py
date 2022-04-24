@@ -3,12 +3,13 @@ import json
 import subprocess
 import logging
 from datetime import datetime
-from json import JSONDecodeError
+from pprint import pprint
 from django.db import transaction
 from django.db.models import Q
 
 from daochem.database.models import blockchain
 from utils.strings import camel_to_snake
+from utils.files import load_json, save_json
 
 
 class TrueblocksHandler:
@@ -62,6 +63,7 @@ class TrueblocksHandler:
                 'value': address, 
                 'postprocess': "| cut -f2,3 | tr '\t' '.' | grep -v blockNumber"
             }
+            
             cmd = self._build_chifra_command(query_list)
             txIds = self._run_chifra(cmd, parse_as='lines')
 
@@ -82,10 +84,11 @@ class TrueblocksHandler:
                 'format': 'json',
                 'args': ['articulate']
             }  
+            
             cmd = self._build_chifra_command(query_trace)
             result = self._run_chifra(cmd, parse_as='json', fpath=fpath)
         else:
-            result = json.loads(fpath)
+            result = load_json(fpath)
         
         # Transform to model format, associating with factory if necessary
         factoryAddress = None
@@ -95,8 +98,7 @@ class TrueblocksHandler:
         parsed = self._transform_chifra_trace_result(result, factory=factoryAddress)
         
         if local_only:
-            with open(fpath_parsed, 'w') as f:
-                json.dump(parsed, f, indent=4)
+            save_json(parsed, fpath_parsed)
         if not local_only:
             # Insert transactions
             logging.info("Adding transactions to database...")
@@ -200,17 +202,6 @@ class TrueblocksHandler:
         # Return string to send to subprocess
         return " ".join(argList)
 
-    def _load_result_from_file(self, fpath):
-        """Placeholder for loading results from a file"""
-        assert os.path.isfile(fpath), "Provide a valid filepath"
-        try:
-            with open(fpath, 'r') as f:
-                result = json.load(f)
-        except JSONDecodeError:
-            result = None
-
-        return result
-
     def _transform_chifra_result(self, call_type, result=None, fpath=None):
         """Run a chifra-call-specific transform function"""
         assert type in ['trace'], "Provide a valid chifra command to parse the output of"
@@ -247,25 +238,62 @@ class TrueblocksHandler:
 
             # Get data on originating transaction
             _origin = [t for t in traces if t["traceAddress"] is None]
-            if len(_origin) == 1:
-                origin = _origin[0]
-                for key in ['transactionHash', 'blockNumber', 'articulatedTrace']:
-                    txData[camel_to_snake(key)] = origin.get(key)
-                for key in ['from', 'to']:
-                    txData[f"{key}_address"] = origin['action'][key]
-                txData['value'] = origin['action']['value']
-            else:
-                logging.warning(f"Found {len(_origin)} traces with no traceAddress for txn {txId}; expected 1")
+            if len(_origin) == 0:
+                logging.warning(f"Could not find a traces without a traceAddress for txn {txId}; expected 1. Skipping...")
+                continue            
+            elif len(_origin) > 1:
+                # Not sure why this happens - don't see anything odd upon inspection of Trueblocks output.
+                # When it finds two, it repeats the same one twice, so okay to proceed
+                logging.warning(f"Found {len(_origin)} traces with no traceAddress for txn {txId}; expected 1. Using the first one found...")
+            origin = _origin[0]
+            for key in ['transactionHash', 'blockNumber', 'articulatedTrace']:
+                txData[camel_to_snake(key)] = origin.get(key)
+            for key in ['from', 'to']:
+                txData[f"{key}_address"] = origin['action'][key]
+            txData['value'] = origin['action']['value']
+
+            aT = origin.get('articulatedTrace', {})
+            txData['function_name'] = aT.get('name')
+            txData['function_inputs'] = aT.get('inputs')
+            txData['function_outpus'] = " ".join([v for k,v in aT.get('outputs', {})])
 
             # Get list of contracts created as a result of that transaction
             contractsCreated = []
-            _creation = [t for t in traces if t.get('action', {}).get('callType', '') == 'creation']
-            for trace in _creation:
+            _creations = [t for t in traces if t.get('action', {}).get('callType', '') == 'creation']
+            for trace in _creations:
                 address = trace['result']['newContract']
                 contractsCreated.append(address)
             txData['contracts_created'] = contractsCreated
 
-            # Link to factory if provided
+            # BlockchainTransactionTrace model: Lump together remaining compressedTrace + output information, tacking on delegation if found
+            # Note: only captures one iteration of delegation (not a deeper callstack)
+            _calls = [t for t in traces if t.get('action', {}).get('callType', '') == 'call' and t["traceAddress"] is not None]
+            _delegatecalls = [t for t in traces if t.get('action', {}).get('callType', '') == 'delegatecall' and t["traceAddress"] is not None]
+            calls = []
+            for trace in _calls:
+                try:
+                    call = {'id': f"{txId}.{trace['traceAddress']}"}
+                    for key in ['from', 'to']:
+                        call[f"{key}_address"] = trace['action'][key]
+                    call['compressed_trace'] = trace.get('compressedTrace', "")
+                    call['value'] = trace['action']['value']
+                    call['output'] = trace.get('result', {}).get('output', "")
+                    call['error'] = trace.get('error')
+                    delegates = [
+                        d['action']['to'] for d in _delegatecalls if 
+                        d['action']['from'] == trace['action']['to'] and
+                        d.get('compressedTrace', "") == trace.get('compressedTrace', "") and
+                        d['traceAddress'].startswith(trace['traceAddress'])
+                    ]
+                    call['delegates'] = delegates
+                    calls.append(call)
+                except KeyError as e:
+                    logging.warning(e)
+                    pprint(trace)
+                    
+            txData['traces'] = calls
+
+            # Link to factory if provided. In some cases (e.g., Aragon 0.8.1) the factory address is actually a delegate for another call...
             if factory is not None:
                 txData['factory'] = factory
 

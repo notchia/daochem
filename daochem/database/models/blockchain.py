@@ -1,8 +1,9 @@
 import os
 from django.db import models
 from django.db.models import Max
-from web3 import Web3, HTTPProvider
 from datetime import datetime
+
+from utils.blockchain import get_timestamp, unpack_compressed_call
 
 _STR_KWARGS = {'max_length': 200, 'null': True}
 
@@ -30,7 +31,6 @@ class BlockchainAddress(models.Model):
 
     def most_recent_appearance(self):
         """Return block number of most recent appearance in transactions
-        
         If not found, return 0"""
 
         txns = self.appears_in()
@@ -50,8 +50,27 @@ class BlockchainAddress(models.Model):
         return name
 
 
+class BlockchainTransactionLog(models.Model):
+    id = models.CharField(primary_key=True, max_length=50, default="0.0.0") # transactionId.logIndex
+    address = models.ForeignKey(
+        BlockchainAddress, 
+        on_delete=models.CASCADE, 
+        related_name="logs_from"
+    )
+    topics = models.CharField(max_length=267, null=True) # up to 4 space-separated 32-bit words
+    event = models.CharField(max_length=200, null=True)
+    compressed_log = models.CharField(max_length=1000, null=True)
+
+    @property
+    def log_dict(self):
+        return unpack_compressed_call(self.compressed_log) if self.compressed_log is not None else {}
+
+    class Meta:
+        db_table = "blockchain_logs"
+
+
 class BlockchainTransactionTrace(models.Model):
-    id = models.CharField(primary_key=True, max_length=50, default="0.0.0")
+    id = models.CharField(primary_key=True, max_length=50, default="0.0.0") # transactionId.traceAddress
     from_address = models.ForeignKey(
         BlockchainAddress, 
         on_delete=models.CASCADE, 
@@ -62,16 +81,20 @@ class BlockchainTransactionTrace(models.Model):
         on_delete=models.CASCADE,
         related_name="traces_to"
     )
-
     value = models.FloatField()
-    error = models.CharField(max_length=20, null=True)
     compressed_trace = models.CharField(max_length=1000, null=True)
-    output = models.CharField(max_length=1000, null=True)
-    delegates = models.ForeignKey(
+    error = models.CharField(max_length=20, null=True)
+    outputs = models.CharField(max_length=1000, null=True) # List of values concatenated with spaces
+    delegate = models.ForeignKey(
         BlockchainAddress, 
         on_delete=models.CASCADE,
+        null=True,
         related_name="delegate_for_trace"
     )
+
+    @property
+    def trace_dict(self):
+        return unpack_compressed_call(self.compressed_trace) if self.compressed_trace is not None else {}
 
     class Meta:
         db_table = "blockchain_traces"
@@ -93,10 +116,10 @@ class BlockchainTransaction(models.Model):
     )
     value = models.FloatField()
     error = models.CharField(max_length=20, null=True)
-    articulated_trace = models.JSONField(default=dict, null=True)
-    function_name = models.CharField(max_length=200, null=True)
-    function_inputs = models.JSONField(default=dict, null=True)
-    function_outpus = models.CharField(max_length=200, null=True) # List of values concatenated with spaces
+    #articulated_trace = models.JSONField(default=dict, null=True)
+    call_name = models.CharField(max_length=200, null=True)
+    call_inputs = models.JSONField(default=dict, null=True)
+    call_outputs = models.CharField(max_length=200, null=True) # List of values concatenated with spaces
     contracts_created = models.ManyToManyField(
         BlockchainAddress,
         related_name='created_by_transaction'
@@ -105,20 +128,17 @@ class BlockchainTransaction(models.Model):
         BlockchainTransactionTrace,
         related_name='originating_from_transaction'
     )
+    logs = models.ManyToManyField(
+        BlockchainTransactionLog,
+        related_name='originating_from_transaction'
+    )
 
     @property
     def timestamp(self):
-        try:
-            w3 = Web3(HTTPProvider(os.getenv('RPC_KEY')))
-            timestamp_unix = w3.eth.get_block(self.block_number).timestamp
-            timestamp = datetime.fromtimestamp(timestamp_unix)
-        except Exception as e:
-            print(e)
-            timestamp = None
-        return timestamp
+        return get_timestamp(self.block_number)
 
     def contains_address(self, address):
-        """Check if an address (string) appears anywhere in the transaction """
+        """Check if an address (string) appears anywhere in the transaction"""
 
         addresFound = (
             self.to_address.address == address or
@@ -127,14 +147,6 @@ class BlockchainTransaction(models.Model):
         )
 
         return addresFound
-
-    def is_internal(self):
-        """Return true if any contracts were created, else false"""
-
-        n_created = self.contracts_created.count()
-        is_internal = True if n_created > 0 else False
-
-        return is_internal
 
     class Meta:
         db_table = "blockchain_transactions"

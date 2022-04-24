@@ -108,12 +108,22 @@ def test_save_chifra_trace_result():
     print("Passed test save_chifra_trace_result")
 
 
-def test_add_or_update_address_transactions():
-
+def test_add_or_update_address_traces():
     # Test w/Aragon v0.6 address (has factory object attached)
     tb = TrueblocksHandler()
     addressObj = BlockchainAddress.objects.get(pk='0x595b34c93aa2c2ba0a38daeede629a0dfbdcc559')
-    tb.add_or_update_address_transactions(addressObj)
+    tb.add_or_update_address_traces(addressObj)
+
+
+def test_add_or_update_address_transactions():
+    # Test w/some random Aragon AppProxyUpgradeable address
+    tb = TrueblocksHandler()
+    try:
+        addressObj = BlockchainAddress.objects.get(pk='0x93CF86a83bAA323407857C0A25e768869E12C721')
+    except BlockchainAddress.DoesNotExist:
+        addressObj = BlockchainAddress(address='0x93CF86a83bAA323407857C0A25e768869E12C721')
+        addressObj.save()
+    tb.add_or_update_address_transactions(addressObj, local_only=True)
 
 
 if __name__ == "__main__":
@@ -121,4 +131,5 @@ if __name__ == "__main__":
     #test_run_chifra()
     #test_parse_chifra_trace_result()
     #test_save_chifra_trace_result()
-    test_add_or_update_address_transactions()
+    test_add_or_update_address_traces()
+    #test_add_or_update_address_transactions()

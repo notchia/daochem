@@ -14,9 +14,11 @@ from utils.blockchain import load_txid
 
 
 def update_or_create_address_record(address):
-    # TOD0: make sure this works when other address info is present! (e.g., doesn't delete existing data)
-    addressObj = blockchain.BlockchainAddress.objects.update_or_create(address=address)[0]
-    addressObj.save()
+    try:
+        addressObj = blockchain.BlockchainAddress.objects.get(pk=address)
+    except blockchain.BlockchainAddress.DoesNotExist:
+        addressObj = blockchain.BlockchainAddress.objects.create(address=address)
+        addressObj.save()
 
     return addressObj
 
@@ -50,7 +52,7 @@ def update_or_create_transaction_record(recordDict, includeTraces=False):
     factory = None
     if recordDict.get('factory') is not None:
         factory = recordDict.pop('factory')
-        
+    
     # Create BlockchainAddress record for from and to addresses if they doesn't already exist
     for addressType in ['from_address', 'to_address']:
         value = recordDict.get(addressType, '0x0')
@@ -83,6 +85,7 @@ def update_or_create_transaction_record(recordDict, includeTraces=False):
         logging.debug(f"Skipping transaction {recordDict['transaction_id']} already in database")
         return
     except blockchain.BlockchainTransaction.DoesNotExist:
+        logging.debug("Adding to database...")
         tx = blockchain.BlockchainTransaction.objects.create(**recordDict)
         tx.save()
         tx.contracts_created.set(contractsCreated)
@@ -96,6 +99,22 @@ def update_or_create_transaction_record(recordDict, includeTraces=False):
         fac.related_transactions.add(tx)
 
     return tx
+
+
+def update_or_create_abi(item, address=None, contract_url=None):
+    assert (address is not None) or (contract_url is not None), "Specify at least one"
+    abiDict = {
+        'address': address,
+        'contract_url': contract_url,
+        'name': item.get('name'),
+        'type': item.get('type'),
+    }
+    inputs = {i['name']: i['type'] for i in item.get('inputs', [])}
+    abiDict['inputs'] = inputs if len(inputs) > 0 else None
+    abi = blockchain.ContractAbi.objects.update_or_create(**abiDict)[0]
+    abi.save()
+
+    return abi
 
 
 class TrueblocksHandler:
@@ -121,11 +140,11 @@ class TrueblocksHandler:
         }
         cmd = self._build_chifra_command(query_when)
         info = self._run_chifra(cmd, parse_as='json')
-        lastPinnedTime = datetime.fromtimestamp(info['timestamp'])
 
         status = {
             'last_pinned_block': lastPinnedBlock,
-            'last_pinned_time': lastPinnedTime
+            'last_pinned_timestamp': info['timestamp'],
+            'last_pinned_datetime': datetime.fromtimestamp(info['timestamp'])
         }
 
         return status
@@ -165,7 +184,7 @@ class TrueblocksHandler:
             }  
             
             cmd = self._build_chifra_command(query_trace)
-            result = self._run_chifra(cmd, parse_as='json', fpath=fpath)
+            result, _ = self._run_chifra(cmd, parse_as='json', fpath=fpath)
         else:
             logging.info(f"Using existing trace list from file for {address}")
             result = load_json(fpath)
@@ -181,7 +200,7 @@ class TrueblocksHandler:
             save_json(parsed, fpath_parsed)
         if not local_only:
             # Insert transactions
-            logging.info("Adding transactions to database...")
+            logging.info(f"Adding {len(parsed)} transactions to database...")
             self._insert_transactions(parsed)    
 
     def add_or_update_address_transactions(self, addressObj, since_block=None, local_only=False):
@@ -189,6 +208,8 @@ class TrueblocksHandler:
         
         since_block options: 
             - None: look for most recent appearance of block in |int block_number|False]
+
+        TODO: Test!!
         """
 
         address = addressObj.address
@@ -237,6 +258,26 @@ class TrueblocksHandler:
             logging.info("Adding transactions to database...")
             self._insert_transactions(parsed)    
 
+    def add_or_update_contract_abi(self, addressObj):
+        """Get contract abi and add to address record"""
+
+        # Get ABI
+        address = addressObj.address
+        query = {
+            'function': 'abis',
+            'value': address,
+            'format': 'json'
+        }
+        cmd = self._build_chifra_command(query)
+        abiDict, _ = self._run_chifra(cmd, parse_as='json')
+
+        # Create ABI records
+        data = abiDict.get('data', [])
+        for item in data:
+            update_or_create_abi(item, address=addressObj)
+        logging.info(f"Added {len(data)} ABI records for {address}")
+
+
     def _get_txids(self, address):
         """Get list of all transaction IDs for an address from the index"""
 
@@ -278,7 +319,8 @@ class TrueblocksHandler:
         try:
             # Run command and parse output as either JSON or a list of lines
             process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
-            result_lines = [line.decode("utf-8") for line in process.stdout]
+            result_lines = [line.decode('utf-8', errors='replace') for line in process.stdout]
+            #result_str = process.stdout
 
             if parse_as == 'json': 
                 result_str = "".join(result_lines)
@@ -498,7 +540,7 @@ class TrueblocksHandler:
 
         with transaction.atomic():
             for d in dataDicts:
-                print(d['transaction_id'])
+                logging.debug(f"Updating/creating BlockchainTransaction for {d['transaction_id']}...")
                 update_or_create_transaction_record(d, includeTraces)
 
         logging.info(f'Added {len(dataDicts)} transactions to database')

@@ -126,10 +126,17 @@ def test_add_or_update_address_transactions():
     tb.add_or_update_address_transactions(addressObj, local_only=True)
 
 
+def test_add_or_update_contract_abi():
+    tb = TrueblocksHandler()
+    addressObj = BlockchainAddress.objects.get(pk='0x38064F40B20347d58b326E767791A6f79cdEddCe')
+    tb.add_or_update_contract_abi(addressObj)    
+
+
 if __name__ == "__main__":
     #test_build_chifra_command()
     #test_run_chifra()
     #test_parse_chifra_trace_result()
     #test_save_chifra_trace_result()
-    test_add_or_update_address_traces()
+    #test_add_or_update_address_traces()
     #test_add_or_update_address_transactions()
+    test_add_or_update_contract_abi()

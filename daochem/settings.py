@@ -47,7 +47,10 @@ if LOCAL:
 else:
     DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    'daogovdata.info'
+]
 
 
 # Application definition

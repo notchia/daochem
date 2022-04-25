@@ -5,6 +5,17 @@ from daochem.database.models.blockchain import ContractAbi, DaoFactory
 from daochem.database.models.daos import Dao
 
 
+def index_test(request):
+    """View function for home page of site."""
+
+    context = {
+        'test': 'test'
+    }
+
+    # Render the HTML template index.html with the data in the context variable
+    return render(request, 'index_test.html', context=context)
+
+
 def index(request):
     """View function for home page of site."""
 

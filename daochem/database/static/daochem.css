@@ -111,6 +111,6 @@ a:link, a:visited {
 }
 a:hover {
 	color: var(--color-dark);
-	background-color: var(--color-light);
+	background-color: var(--color-medium);
 	text-decoration: none;
 }

@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.db.models import Q
-from daochem.database.models.blockchain import DaoFactory
+from daochem.database.models.blockchain import ContractAbi, DaoFactory
 from daochem.database.models.daos import Dao
 
 
@@ -32,8 +32,35 @@ def factory_contract_summary(request, contract_address):
 
 
 def factories(request):
+    """Get some stats on the factories"""
+
+    factories = []
+    for factoryObj in DaoFactory.objects.all().order_by('dao_framework__name', 'version'):
+        factoryDict = {'model': factoryObj}
+        relatedTxSet = factoryObj.related_transactions.filter(call_name__in=factoryObj.dao_creation_functions)
+        creationCount = relatedTxSet.count()
+        factoryDict['daos_created_count'] = creationCount
+
+        """
+        # TODO: Figure out how to aggregate over JSONfield keys
+        for fcn in factoryObj.dao_creation_functions:
+            aggDict = {}
+            abi = ContractAbi.objects.get(
+                Q(address=factoryObj.contract_address) &
+                Q(name=fcn)
+            )
+            params = abi.get('params', {})
+            for key, value in params:
+                agg = None
+                if value.endswith('[]'):
+                    relatedTxSet.agg.count()
+                    agg = relatedTxSet.annotate(val=KeyTextTransform('createdDate','jdata')).count()
+        """
+
+        factories.append(factoryDict)
+
     context = {
-        'factories': DaoFactory.objects.all()
+        'factories': factories
     }
 
     return render(request, 'factories.html', context)

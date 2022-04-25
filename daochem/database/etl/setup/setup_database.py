@@ -4,6 +4,7 @@ from django.db import transaction
 from django.db.models import Q
 
 from daochem.database.models import blockchain
+from daochem.database.etl.trueblocks import TrueblocksHandler
 
 
 SETUP_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -68,8 +69,16 @@ def setup_monitors():
         monitor.save()
 
 
+def setup_abis():
+    tb = TrueblocksHandler()
+    for factory in blockchain.DaoFactory.objects.all():
+        addressObj = factory.contract_address
+        tb.add_or_update_contract_abi(addressObj)    
+
+
 if __name__ == "__main__":
     # RUN ONCE ONLY! Will create duplicate entries and then encounter uniqueness errors if run again
     setup_dao_frameworks()
     setup_dao_factories()
     setup_monitors()
+    setup_abis()

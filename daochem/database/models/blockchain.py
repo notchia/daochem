@@ -12,7 +12,6 @@ class BlockchainAddress(models.Model):
     address = models.CharField(primary_key=True, max_length=42, default="0x0")
     ens = models.CharField(**_STR_KWARGS)
     contract_name = models.CharField(**_STR_KWARGS)
-    contract_abi = models.JSONField(default=dict, null=True)
 
     @property
     def etherscan_url(self):
@@ -153,6 +152,32 @@ class BlockchainTransaction(models.Model):
 
     def __str__(self):
         return self.transaction_id
+
+
+class ContractAbi(models.Model):
+    address = models.ForeignKey(
+        BlockchainAddress, 
+        on_delete=models.CASCADE, 
+        null=True,
+        related_name="abis"
+    )
+    contract_url = models.CharField(max_length=200, null=True)
+    name = models.CharField(max_length=100, default="")
+    type = models.CharField(max_length=20, default="")
+    inputs = models.JSONField(default=dict, null=True) # dictionary of param:type pairs
+
+    class Meta:
+        db_table = "contract_abis"
+        constraints = [
+            models.CheckConstraint(
+                name="%(app_label)s_%(class)s_address_or_contract_url",
+                check=~models.Q(address__isnull=True, contract_url__isnull=True)
+            )
+        ]
+
+    def __str__(self):
+        address_name = str(self.address)
+        return f"{self.name} at {address_name}"
 
 
 class DaoFramework(models.Model):

@@ -101,6 +101,22 @@ def update_or_create_transaction_record(recordDict, includeTraces=False):
     return tx
 
 
+def update_or_create_abi(item, address=None, contract_url=None):
+    assert (address is not None) or (contract_url is not None), "Specify at least one"
+    abiDict = {
+        'address': address,
+        'contract_url': contract_url,
+        'name': item.get('name'),
+        'type': item.get('type'),
+    }
+    inputs = {i['name']: i['type'] for i in item.get('inputs', [])}
+    abiDict['inputs'] = inputs if len(inputs) > 0 else None
+    abi = blockchain.ContractAbi.objects.update_or_create(**abiDict)[0]
+    abi.save()
+
+    return abi
+
+
 class TrueblocksHandler:
     """Run chifra commands and extract, transform, and load the outputs of these
     e.g., `chifra traces --articulate --fmt json [addresses]` 
@@ -192,6 +208,8 @@ class TrueblocksHandler:
         
         since_block options: 
             - None: look for most recent appearance of block in |int block_number|False]
+
+        TODO: Test!!
         """
 
         address = addressObj.address
@@ -239,6 +257,26 @@ class TrueblocksHandler:
             # Insert transactions
             logging.info("Adding transactions to database...")
             self._insert_transactions(parsed)    
+
+    def add_or_update_contract_abi(self, addressObj):
+        """Get contract abi and add to address record"""
+
+        # Get ABI
+        address = addressObj.address
+        query = {
+            'function': 'abis',
+            'value': address,
+            'format': 'json'
+        }
+        cmd = self._build_chifra_command(query)
+        abiDict, _ = self._run_chifra(cmd, parse_as='json')
+
+        # Create ABI records
+        data = abiDict.get('data', [])
+        for item in data:
+            update_or_create_abi(item, address=addressObj)
+        logging.info(f"Added {len(data)} ABI records for {address}")
+
 
     def _get_txids(self, address):
         """Get list of all transaction IDs for an address from the index"""

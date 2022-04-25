@@ -19,4 +19,5 @@ from django.urls import include, path
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('daochem/database/', include('daochem.database.urls')),
+    path('', include('daochem.database.urls'))
 ]

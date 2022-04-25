@@ -182,8 +182,12 @@ class DaoFactory(models.Model):
         BlockchainTransaction,
         related_name='related_to_factory'
     )
-
     is_active = models.BooleanField(default=True)
+    dao_creation_functions_str = models.CharField(max_length=50, default="") # List of values concatenated with spaces
+
+    @property
+    def dao_creation_functions(self):
+        return self.dao_creation_functions_str.split()
 
     class Meta:
         db_table = "dao_factories"

@@ -90,11 +90,11 @@ WSGI_APPLICATION = 'daochem.wsgi.application'
 DATABASES = {
     'default': {
         "ENGINE": 'django.db.backends.postgresql',
-        "NAME": os.getenv("DB_NAME"),
-        "HOST": os.getenv("DB_HOST"),
-        "PORT": os.getenv("DB_PORT"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD"),
+        "NAME": os.getenv("DATABASE"),
+        "HOST": os.getenv("HOSTNAME"),
+        "PORT": os.getenv("PORT"),
+        "USER": os.getenv("USERNAME"),
+        "PASSWORD": os.getenv("PASSWORD"),
         "OPTIONS": {'sslmode': 'require'}
     }
 }

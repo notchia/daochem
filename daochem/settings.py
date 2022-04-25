@@ -13,9 +13,9 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 import os
 import logging
 from pathlib import Path
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 
-load_dotenv(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../.env'))
+#load_dotenv(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../.env'))
 
 if not os.path.isdir('tmp'):
     os.mkdir('tmp')
@@ -36,7 +36,7 @@ logging.getLogger().setLevel(LOG_LEVEL)
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = []
 

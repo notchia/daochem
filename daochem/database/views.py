@@ -8,8 +8,10 @@ from daochem.database.models.daos import Dao
 def index_test(request):
     """View function for home page of site."""
 
+    num_factories = DaoFactory.objects.count()
+
     context = {
-        'test': 'test'
+        'test': num_factories
     }
 
     # Render the HTML template index.html with the data in the context variable

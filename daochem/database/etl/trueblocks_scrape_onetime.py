@@ -1,10 +1,10 @@
-from datetime import datetime
-from threading import local
+import logging
+
 from daochem.database.models.blockchain import DaoFactory, EtlMonitor
 from daochem.database.etl.trueblocks import TrueblocksHandler
 
 
-def scrape_factories(factory_address=None, since_block=None):
+def scrape_factories():
     """Query trueblocks and extract, transform, and load factory address transaction data
     
     If no factory_address provided, scrapes all in database. 
@@ -16,12 +16,11 @@ def scrape_factories(factory_address=None, since_block=None):
     #indexStatus = tb.get_index_status()
 
     for factory in DaoFactory.objects.all():
-        print(factory)
-        try:
-            addressObj = factory.contract_address
-            tb.add_or_update_address_transactions(addressObj, local_only=True)
-        except:
-            pass
+        if factory.version in ['0.6', '0.8', '0.8.1', 'openlaw_tribute', '2019-05-27']: # go back to '0.7' and 'v2.1' 
+            continue
+        logging.info(f"Processing {factory}...")
+        addressObj = factory.contract_address
+        tb.add_or_update_address_traces(addressObj)
 
     #monitor = EtlMonitor.objects.get(pk='trueblocks')
     #monitor.last_scrape_time = datetime.now()

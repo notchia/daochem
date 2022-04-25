@@ -131,5 +131,5 @@ if __name__ == "__main__":
     #test_run_chifra()
     #test_parse_chifra_trace_result()
     #test_save_chifra_trace_result()
-    test_add_or_update_address_traces()
-    #test_add_or_update_address_transactions()
+    #test_add_or_update_address_traces()
+    test_add_or_update_address_transactions()

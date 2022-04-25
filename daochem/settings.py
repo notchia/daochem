@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
 import os
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -21,6 +22,11 @@ if not os.path.isdir('tmp'):
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Set log levels
+LOG_LEVEL = logging.DEBUG
+logging.basicConfig()
+logging.getLogger().setLevel(LOG_LEVEL)
 
 
 # Quick-start development settings - unsuitable for production

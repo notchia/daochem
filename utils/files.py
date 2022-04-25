@@ -7,7 +7,7 @@ def load_json(fpath):
 
     r = {}
     try:
-        with open(fpath, 'r') as f:
+        with open(fpath, 'r', encoding='utf-8', errors='replace') as f:
             r = json.load(f)
     except FileNotFoundError:
         raise

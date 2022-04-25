@@ -14,9 +14,11 @@ from utils.blockchain import load_txid
 
 
 def update_or_create_address_record(address):
-    # TOD0: make sure this works when other address info is present! (e.g., doesn't delete existing data)
-    addressObj = blockchain.BlockchainAddress.objects.update_or_create(address=address)[0]
-    addressObj.save()
+    try:
+        addressObj = blockchain.BlockchainAddress.objects.get(pk=address)
+    except blockchain.BlockchainAddress.DoesNotExist:
+        addressObj = blockchain.BlockchainAddress.objects.create(address=address)
+        addressObj.save()
 
     return addressObj
 
@@ -50,7 +52,7 @@ def update_or_create_transaction_record(recordDict, includeTraces=False):
     factory = None
     if recordDict.get('factory') is not None:
         factory = recordDict.pop('factory')
-        
+    
     # Create BlockchainAddress record for from and to addresses if they doesn't already exist
     for addressType in ['from_address', 'to_address']:
         value = recordDict.get(addressType, '0x0')
@@ -83,6 +85,7 @@ def update_or_create_transaction_record(recordDict, includeTraces=False):
         logging.debug(f"Skipping transaction {recordDict['transaction_id']} already in database")
         return
     except blockchain.BlockchainTransaction.DoesNotExist:
+        logging.debug("Adding to database...")
         tx = blockchain.BlockchainTransaction.objects.create(**recordDict)
         tx.save()
         tx.contracts_created.set(contractsCreated)
@@ -121,11 +124,11 @@ class TrueblocksHandler:
         }
         cmd = self._build_chifra_command(query_when)
         info = self._run_chifra(cmd, parse_as='json')
-        lastPinnedTime = datetime.fromtimestamp(info['timestamp'])
 
         status = {
             'last_pinned_block': lastPinnedBlock,
-            'last_pinned_time': lastPinnedTime
+            'last_pinned_timestamp': info['timestamp'],
+            'last_pinned_datetime': datetime.fromtimestamp(info['timestamp'])
         }
 
         return status
@@ -165,7 +168,7 @@ class TrueblocksHandler:
             }  
             
             cmd = self._build_chifra_command(query_trace)
-            result = self._run_chifra(cmd, parse_as='json', fpath=fpath)
+            result, _ = self._run_chifra(cmd, parse_as='json', fpath=fpath)
         else:
             logging.info(f"Using existing trace list from file for {address}")
             result = load_json(fpath)
@@ -181,7 +184,7 @@ class TrueblocksHandler:
             save_json(parsed, fpath_parsed)
         if not local_only:
             # Insert transactions
-            logging.info("Adding transactions to database...")
+            logging.info(f"Adding {len(parsed)} transactions to database...")
             self._insert_transactions(parsed)    
 
     def add_or_update_address_transactions(self, addressObj, since_block=None, local_only=False):
@@ -278,7 +281,8 @@ class TrueblocksHandler:
         try:
             # Run command and parse output as either JSON or a list of lines
             process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
-            result_lines = [line.decode("utf-8") for line in process.stdout]
+            result_lines = [line.decode('utf-8', errors='replace') for line in process.stdout]
+            #result_str = process.stdout
 
             if parse_as == 'json': 
                 result_str = "".join(result_lines)
@@ -498,7 +502,7 @@ class TrueblocksHandler:
 
         with transaction.atomic():
             for d in dataDicts:
-                print(d['transaction_id'])
+                logging.debug(f"Updating/creating BlockchainTransaction for {d['transaction_id']}...")
                 update_or_create_transaction_record(d, includeTraces)
 
         logging.info(f'Added {len(dataDicts)} transactions to database')

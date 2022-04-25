@@ -13,21 +13,27 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 import os
 import logging
 from pathlib import Path
-#from dotenv import load_dotenv
 
-#load_dotenv(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../.env'))
+# Set this to True when running locally, False in production!
+LOCAL = False
 
-if not os.path.isdir('tmp'):
-    os.mkdir('tmp')
+if LOCAL:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../.env'))
+
+    if not os.path.isdir('tmp'):
+        os.mkdir('tmp')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Set log levels
-LOG_LEVEL = logging.DEBUG
+if LOCAL:
+    LOG_LEVEL = logging.DEBUG
+else:
+    LOG_LEVEL = logging.WARNING
 logging.basicConfig()
 logging.getLogger().setLevel(LOG_LEVEL)
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
@@ -36,7 +42,10 @@ logging.getLogger().setLevel(LOG_LEVEL)
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+if LOCAL:
+    DEBUG = True
+else:
+    DEBUG = False
 
 ALLOWED_HOSTS = []
 
@@ -87,14 +96,18 @@ WSGI_APPLICATION = 'daochem.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
+ENV_PREFIX = ''
+if LOCAL:
+    ENV_PREFIX = 'DB_'
+
 DATABASES = {
     'default': {
         "ENGINE": 'django.db.backends.postgresql',
         "NAME": os.getenv("DATABASE"),
-        "HOST": os.getenv("HOSTNAME"),
-        "PORT": os.getenv("PORT"),
-        "USER": os.getenv("USERNAME"),
-        "PASSWORD": os.getenv("PASSWORD"),
+        "HOST": os.getenv(ENV_PREFIX + "HOSTNAME"),
+        "PORT": os.getenv(ENV_PREFIX + "PORT"),
+        "USER": os.getenv(ENV_PREFIX + "USERNAME"),
+        "PASSWORD": os.getenv(ENV_PREFIX + "PASSWORD"),
         "OPTIONS": {'sslmode': 'require'}
     }
 }

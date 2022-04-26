@@ -117,13 +117,11 @@ def test_add_or_update_address_traces():
 
 def test_add_or_update_address_transactions():
     # Test w/some random Aragon AppProxyUpgradeable address
+    dao_address = '0xe9d7e590171cb5080ab8dfd45850692a714260f0' #defi omega
+    addressObj = BlockchainAddress.objects.get(pk=dao_address)
+
     tb = TrueblocksHandler()
-    try:
-        addressObj = BlockchainAddress.objects.get(pk='0x93CF86a83bAA323407857C0A25e768869E12C721')
-    except BlockchainAddress.DoesNotExist:
-        addressObj = BlockchainAddress(address='0x93CF86a83bAA323407857C0A25e768869E12C721')
-        addressObj.save()
-    tb.add_or_update_address_transactions(addressObj, local_only=True)
+    tb.add_or_update_address_transactions(addressObj)
 
 
 def test_add_or_update_contract_abi():
@@ -138,5 +136,5 @@ if __name__ == "__main__":
     #test_parse_chifra_trace_result()
     #test_save_chifra_trace_result()
     #test_add_or_update_address_traces()
-    #test_add_or_update_address_transactions()
-    test_add_or_update_contract_abi()
+    test_add_or_update_address_transactions()
+    #test_add_or_update_contract_abi()

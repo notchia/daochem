@@ -7,7 +7,29 @@ from django.db.models import Q
 
 from utils.files import save_json
 from daochem.database.models.daos import Dao
-from daochem.database.models.twitter import TwitterAccount, Tweet
+from daochem.database.models.twitter import TwitterAccount, Tweet, governance_topics, is_governance_related
+
+
+def add_governance_keywords():
+    with transaction.atomic():
+        for account in TwitterAccount.objects.all():
+            print(account.username)
+            try:
+                count = 0
+                keywords = []
+                for tweet in account.tweets.all():
+                    topics = governance_topics(tweet.text, [tweet.author.name, tweet.author.username])
+                    keywords.extend(topics)
+                    tweet.governance_topics = topics
+                    tweet.is_governance_related = is_governance_related(topics)
+                    tweet.save()
+                    count += 1
+                    if count % 100 == 0:
+                        print(count)
+                print(f"Found: {list(set(keywords))}")
+            except Exception as e:
+                print(e)
+
 
 class TwitterHandler():
     
@@ -181,3 +203,7 @@ class TwitterHandler():
             tweet.save()
 
         return tweet
+
+
+if __name__ == "__main__":
+    add_governance_keywords()

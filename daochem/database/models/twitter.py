@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
 from utils.strings import tokenize
 
 _STR_KWARGS = {'max_length': 200, 'null': True}
@@ -47,41 +48,16 @@ class Tweet(models.Model):
     retweet_count = models.PositiveIntegerField()
     urls = models.CharField(max_length=300, default="") # Space-separated urls, if multiple
     last_updated = models.DateTimeField(auto_now=True)
+    governance_topics = ArrayField(models.CharField(max_length=15, blank=True), null=True)
+    is_governance_related = models.BooleanField(default=False)
 
     @property
     def text_tokenized(self):
-        return tokenize(self.text)
+        return tokenize(self.text) # Not stored to reduce redundancy
 
     @property
-    def governance_keywords(self):
-        """Find topics in tokenized text and DAO governance tooling in raw text"""
-
-        KEYWORDS_DICT = {
-            'vote': ['vote', 'votes', 'voter', 'voters', 'voting'],
-            'propose': ['proposal', 'proposals'],
-            'governance': ['governance'],
-            'discussion': ['discuss', 'discussion', 'deliberation'],
-            'decide': ['decide', 'decision', 'decisionmaking', 'decision-making'],
-        }
-
-        PROPER_NOUNS = [
-            'Aragon', 'Celeste', 'Colony', 'DAOhaus', 'DAOstack', 'Kleros', 'Moloch', 'Tribute', 
-        ]
-
-        keywords = [
-            topic for topic, keywords in KEYWORDS_DICT.items() if 
-            any([k for k in keywords if k in self.text_tokenized])
-        ]
-        nouns = [
-            n for n in PROPER_NOUNS if 
-            (n in self.text) and 
-            (n.lower() not in (self.author.name or self.author.username))
-        ]
-
-        return keywords + nouns
-
     def text_clean(self):
-        return " ".join(self.text_tokenized) # Not stored as property to reduce redundancy
+        return " ".join(self.text_tokenized) # Not stored to reduce redundancy
 
     def __str__(self):
         return self.text_clean()
@@ -89,3 +65,31 @@ class Tweet(models.Model):
     class Meta:
         db_table = "tweets"
 
+
+def is_governance_related(governance_topics):
+    if len(governance_topics) > 0:
+        return True
+    return False
+
+
+def governance_topics(text, names):
+    """Find topics in tokenized text"""
+
+    text_tokenized = tokenize(text)
+
+    KEYWORDS_DICT = {
+        'propose': ['proposal', 'proposals'],
+        'vote': ['vote', 'votes', 'voter', 'voters', 'voting'],
+        'decide': ['decide', 'decision', 'decisionmaking', 'decision-making'],
+        'discuss': ['forum'],
+        'governance': ['governance'],
+        'treasury': ['treasury', 'budget']
+    }
+
+    keywords = [
+        topic for topic, keywords in KEYWORDS_DICT.items() if 
+        any([k for k in keywords if k in text_tokenized])
+    ]
+    keywords.sort()
+
+    return keywords

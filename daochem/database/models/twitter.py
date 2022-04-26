@@ -40,19 +40,47 @@ class Tweet(models.Model):
         null=True,
         related_name="tweets"
     )
-    text = models.CharField(max_length=300, default="")
+    text = models.CharField(max_length=400, default="")
     created_at = models.DateField()
-    like_count = models.PositiveSmallIntegerField() # For tweet, not row
-    reply_count = models.PositiveSmallIntegerField()
-    retweet_count = models.PositiveSmallIntegerField()
-    urls = models.CharField(max_length=200, default="") # Space-separated urls, if multiple
+    like_count = models.PositiveIntegerField() # For tweet, not row
+    reply_count = models.PositiveIntegerField()
+    retweet_count = models.PositiveIntegerField()
+    urls = models.CharField(max_length=300, default="") # Space-separated urls, if multiple
     last_updated = models.DateTimeField(auto_now=True)
 
     @property
-    def description_tokenized(self):
+    def text_tokenized(self):
         return tokenize(self.text)
 
-    def description_clean(self):
+    @property
+    def governance_keywords(self):
+        """Find topics in tokenized text and DAO governance tooling in raw text"""
+
+        KEYWORDS_DICT = {
+            'vote': ['vote', 'votes', 'voter', 'voters', 'voting'],
+            'propose': ['proposal', 'proposals'],
+            'governance': ['governance'],
+            'discussion': ['discuss', 'discussion', 'deliberation'],
+            'decide': ['decide', 'decision', 'decisionmaking', 'decision-making'],
+        }
+
+        PROPER_NOUNS = [
+            'Aragon', 'Celeste', 'Colony', 'DAOhaus', 'DAOstack', 'Kleros', 'Moloch', 'Tribute', 
+        ]
+
+        keywords = [
+            topic for topic, keywords in KEYWORDS_DICT.items() if 
+            any([k for k in keywords if k in self.text_tokenized])
+        ]
+        nouns = [
+            n for n in PROPER_NOUNS if 
+            (n in self.text) and 
+            (n.lower() not in (self.author.name or self.author.username))
+        ]
+
+        return keywords + nouns
+
+    def text_clean(self):
         return " ".join(self.text_tokenized) # Not stored as property to reduce redundancy
 
     def __str__(self):

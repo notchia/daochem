@@ -2,6 +2,16 @@ import re
 from nltk.tokenize import sent_tokenize, word_tokenize, RegexpTokenizer
 
 
+def clean_dao_name(s):
+    s_clean = re.sub('\W*\s*_*', '', s)
+    s_clean = s_clean.lower()
+    s_clean = s_clean.replace('','')
+    s_clean = s_clean[3:] if s_clean.startswith('dao') else s_clean
+    s_clean = s_clean[:-3] if s_clean.endswith('dao') else s_clean
+
+    return s_clean
+
+
 def tokenize(text):
     tokenizer = RegexpTokenizer('\w+')
     text_tokenized = tokenizer.tokenize(text.lower())

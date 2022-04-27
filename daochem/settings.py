@@ -29,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Set log levels
 if LOCAL:
-    LOG_LEVEL = logging.DEBUG
+    LOG_LEVEL = logging.INFO
 else:
     LOG_LEVEL = logging.WARNING
 logging.basicConfig()

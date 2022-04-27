@@ -67,6 +67,5 @@ if __name__ == "__main__":
     #test_twitter_credentials()
     #test_transforms()
     #test_twitter_account_add()
-    #test_tweet_add()
-    tw = TwitterHandler()
-    tw.upsert_dao_tweets(Dao.objects.get(Q(name='MolochDAO')))
+    test_tweet_add()
+

@@ -12,6 +12,8 @@ from utils.strings import camel_to_snake
 from utils.files import load_json, save_json
 from utils.blockchain import load_txid
 
+# TODO: handle all addresses in lowercase only!
+
 
 def update_or_create_address_record(address):
     try:
@@ -43,7 +45,7 @@ def update_or_create_log_record(logDict):
     return logObj
 
 
-def update_or_create_transaction_record(recordDict, includeTraces=False):
+def update_or_create_transaction_record(recordDict, only_create=False, includeTraces=False):
     """Create new transaction from dictionary of model parameters"""
 
     if recordDict is None or recordDict == {}:
@@ -77,21 +79,32 @@ def update_or_create_transaction_record(recordDict, includeTraces=False):
         for t in traces_orig:
             traces.append(update_or_create_trace_record(t))
     else:
-        recordDict.pop('traces')
+        recordDict.pop('traces', None)
 
     # Update or create BlockchainTransaction record
     try:
-        blockchain.BlockchainTransaction.objects.get(pk=recordDict['transaction_id'])
-        logging.debug(f"Skipping transaction {recordDict['transaction_id']} already in database")
-        return
+        txn = blockchain.BlockchainTransaction.objects.get(pk=recordDict['transaction_id'])
+        for key, value in recordDict.items():
+            if key not in ['contracts_created', 'logs', 'traces']:
+                setattr(txn, key, value)
+            else:
+                if key == 'contracts_created':
+                    txn.contracts_created.add(*value)
+                if key == 'logs':
+                    txn.logs.add(*value)
+                if key == 'traces':
+                    txn.traces.add(*value)
+        txn.save()
+        logging.debug(f"Updated transaction already in database")
+        
     except blockchain.BlockchainTransaction.DoesNotExist:
-        logging.debug("Adding to database...")
         tx = blockchain.BlockchainTransaction.objects.create(**recordDict)
         tx.save()
         tx.contracts_created.set(contractsCreated)
         tx.logs.set(logs)
         if includeTraces:
             tx.traces.set(traces)
+        logging.debug("Added new transaction to database...")
 
     # Add transaction to factory contract list
     if factory is not None:
@@ -214,7 +227,7 @@ class TrueblocksHandler:
 
         address = addressObj.address
 
-        fpath = os.path.join(os.getcwd(), f"tmp/trueblocks_{address}.json")
+        fpath = os.path.join(os.getcwd(), f"tmp/trueblocks_txns_{address}.json")
         fpath_parsed = os.path.join(os.getcwd(), f"tmp/trueblocks_{address}_parsed.json")
 
         if not os.path.isfile(fpath):
@@ -231,15 +244,15 @@ class TrueblocksHandler:
                 txIds = list(filter(lambda id: int(id.split('.')[0]) > since_block, txIds))
 
             # Get all transaction traces
-            logging.info("Running chifra logs for the list of tx ids...")
-            query_trace = {
-                'function': 'logs', 
+            logging.info("Running chifra transactions for the list of tx ids...")
+            query_txn = {
+                'function': 'transactions', 
                 'value': txIds, 
                 'format': 'json',
                 'args': ['articulate']
             }  
             
-            cmd = self._build_chifra_command(query_trace)
+            cmd = self._build_chifra_command(query_txn)
             result, _ = self._run_chifra(cmd, parse_as='json', fpath=fpath)
         else:
             result = load_json(fpath)
@@ -249,7 +262,7 @@ class TrueblocksHandler:
         if hasattr(addressObj, 'daofactory'):
             # TODO: check that this is actually catching this case!
             factoryAddress = address
-        parsed = self._transform_chifra_trace_result(result, factory=factoryAddress)
+        parsed = self._transform_chifra_transaction_result(result, factory=factoryAddress)
         
         if local_only:
             save_json(parsed, fpath_parsed)
@@ -318,9 +331,9 @@ class TrueblocksHandler:
 
         try:
             # Run command and parse output as either JSON or a list of lines
+            # NOTE: excapes all backslashes to prevent invalid \escape JSONDecoderError
             process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
-            result_lines = [line.decode('utf-8', errors='replace') for line in process.stdout]
-            #result_str = process.stdout
+            result_lines = [line.decode('utf-8', errors='replace').replace('\\','\\\\') for line in process.stdout]
 
             if parse_as == 'json': 
                 result_str = "".join(result_lines)
@@ -503,25 +516,32 @@ class TrueblocksHandler:
 
         for tx in data:
             txId = load_txid(tx['blockNumber'], tx['transactionIndex'])
-            txData = {'transaction_id': txId}
-            for key in ['transactionHash', 'blockNumber']:
-                txData[camel_to_snake(key)] = tx.get(key)
+            txData = {
+                'transaction_id': txId,
+                'block_number': tx.get('blockNumber'),
+                'transaction_hash': tx.get('hash'),
+                'value': tx.get('value'),
+            }
             for key in ['from', 'to']:
-                txData[f"{key}_address"] = tx['action'][key]
-            txData['value'] = tx['action']['value']
+                txData[f"{key}_address"] = tx[key]
 
             # Get articulated trace data
-            aT = tx.get('articulatedTrace', {})
+            aT = tx.get('articulatedTx', {})
             txData['call_name'] = aT.get('name')
             txData['call_inputs'] = aT.get('inputs')
             outputs = " ".join([v for k,v in aT.get('outputs', {}).items()])
             txData['call_outputs'] = outputs if len(outputs) > 0 else None
 
+            # Get contract created
+            contractCreated = tx.get('receipt', {}).get('contractAddress')
+            if contractCreated is not None and contractCreated != '0x0':
+                txData['contracts_created'] = [contractCreated]
+
             # Get events emitted by the 'to' address
             logs = []
-            for log in tx.get('logs', []):
-                logData = {}
+            for log in tx.get('receipt', {}).get('logs', []):
                 if log['address'] == txData['to_address']:
+                    logData = {}
                     logData['id'] = f"{txId}.{log['logIndex']}"
                     logData['address'] = log['address']
                     #topics = " ".join([t for t in log.get('topics', [])])
@@ -529,6 +549,9 @@ class TrueblocksHandler:
                     #logData['data'] = log.get('data)
                     logData['event'] = log.get('articulatedLog', {}).get('name')
                     logData['compressed_log'] = log.get('compressedLog')
+                    logs.append(logData)
+            if len(logs) > 0:
+                txData['logs'] = logs
 
             # Add transaction to list
             txList.append(txData)

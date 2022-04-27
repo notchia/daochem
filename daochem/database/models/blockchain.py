@@ -115,7 +115,6 @@ class BlockchainTransaction(models.Model):
     )
     value = models.FloatField()
     error = models.CharField(max_length=20, null=True)
-    #articulated_trace = models.JSONField(default=dict, null=True)
     call_name = models.CharField(max_length=200, null=True)
     call_inputs = models.JSONField(default=dict, null=True)
     call_outputs = models.CharField(max_length=200, null=True) # List of values concatenated with spaces

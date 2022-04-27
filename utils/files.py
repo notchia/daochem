@@ -1,4 +1,5 @@
 import os
+import re
 import json
 
 
@@ -8,7 +9,9 @@ def load_json(fpath):
     r = {}
     try:
         with open(fpath, 'r', encoding='utf-8', errors='replace') as f:
-            r = json.load(f)
+            lines = f.readlines()
+            lines = [re.sub(r'\\{1}', r'\\\\', l) for l in lines] # to prevent invalid \escape JSONDecodeError
+            r = json.loads("\n".join(lines))
     except FileNotFoundError:
         raise
     except json.decoder.JSONDecodeError:

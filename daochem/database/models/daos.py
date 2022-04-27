@@ -10,10 +10,9 @@ SURVEY_QUESTIONS = {
     'q1': "do you feel a sense of agency in the decision-making process?", 
     'q2': "do you trust the decision-making process?", 
     'q3': "does the DAO effectively accomplish its mission?", 
-    'q3': "do you feel wanted and/or needed by the DAO?", 
-    'q3': "does contributing to this DAO bring you a sense of fulfillment?", 
+    'q4': "do you feel wanted and/or needed by the DAO?", 
+    'q5': "does contributing to this DAO bring you a sense of fulfillment?", 
 }
-
 
 class DeepdaoAddress(models.Model):
     id = models.CharField(primary_key=True, max_length=200, default="")

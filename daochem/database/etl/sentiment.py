@@ -11,7 +11,7 @@ def load_responses_from_csv():
     CSV = os.path.join(BASE_DIR, 'tmp/sentiment.csv')
     df = pd.read_csv(CSV, index_col=None)
 
-    cols = df.columns()
+    cols = df.columns
     with transaction.atomic():
         for i, row in df.iterrows():
             rDict = {c: row[c] for c in cols}
@@ -21,7 +21,7 @@ def load_responses_from_csv():
             except:
                 pass
             rObj = DaoSurveyResponse.objects.create(**rDict)
-            rObj.save()
+            rObj.save()  
 
 
 if __name__=="__main__":

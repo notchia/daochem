@@ -174,6 +174,14 @@ class TrueblocksHandler:
 
         return status
 
+    def get_transaction_count(self, addressObj):
+        address = addressObj.address
+        txIds = self._get_txids(address)
+        address.chifra_list_count = len(txIds)
+        address.save()
+        logging.status(f"Updated txn count to {len(txIds)} for {address}")
+        return 
+
     def add_or_update_address_traces(self, addressObj, since_block=None, local_only=False):
         """Get list of all transaction ids from index, then export trace 
         

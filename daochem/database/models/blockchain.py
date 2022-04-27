@@ -12,6 +12,7 @@ class BlockchainAddress(models.Model):
     address = models.CharField(primary_key=True, max_length=42, default="0x0")
     ens = models.CharField(**_STR_KWARGS)
     contract_name = models.CharField(**_STR_KWARGS)
+    chifra_list_count = models.PositiveIntegerField(null=True)
 
     @property
     def etherscan_url(self):

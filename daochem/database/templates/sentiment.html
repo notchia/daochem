@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block block_content %}
+
+{% for dao in daos %}
+  <div class="card">
+    <div class="container">
+      <h2><b>{{ fac.name }}</b></h2>
+      <p>Ethereum address: <a href="{{ fac.address_url }}">{{ fac.address }}</a></p>
+      <p>Number of DAOs created: {{ fac.daos_created_count }}</p>
+    </div>
+  </div>
+  {% endfor %}
+{% endblock %}

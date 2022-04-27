@@ -1,14 +1,11 @@
 import os
 import numpy as np
 from pprint import pprint
-from datetime import datetime, timedelta
-#from dateutil.relativedelta import relativedelta
+from datetime import datetime
 import pandas as pd
-from django.db.models import Min, Max, Avg, Count, Subquery, Q, F
 
 from utils.files import save_json, load_json
 from daochem.database.analysis.base import RESULTS_DIR
-from daochem.database.models.daos import Dao
 from daochem.database.models.twitter import TwitterAccount, Tweet, KEYWORDS_DICT
 
 RESULTS_FILE = os.path.join(RESULTS_DIR, 'twitter.json')

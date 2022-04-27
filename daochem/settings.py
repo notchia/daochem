@@ -150,13 +150,30 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'daochem/database/static'),
-]
+if LOCAL:
+    STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+    STATIC_URL = '/static/'
+    STATICFILES_DIRS = [
+        os.path.join(BASE_DIR, 'daochem/database/static'),
+    ]
+else:
+    # settings
+    #AWS_ACCESS_KEY_ID = os.getenv('STORAGE_API_KEY')
+    #AWS_SECRET_ACCESS_KEY = os.getenv('STORAGE_API_SECRET')   
+    AWS_STORAGE_BUCKET_NAME = os.getenv('STORAGE_BUCKET_NAME')
+    AWS_DEFAULT_ACL = 'public-read'
+    AWS_S3_REGION_NAME='nyc3'
+    AWS_S3_ENDPOINT = f'{AWS_STORAGE_BUCKET_NAME}.{AWS_S3_REGION_NAME}.digitaloceanspaces.com'
+    #AWS_S3_ENDPOINT_URL = f'https://{AWS_S3_ENDPOINT}'
+
+    # static settings
+    #AWS_LOCATION = 'static'
+    STATIC_URL = f'https://{AWS_S3_ENDPOINT}/'
+    #DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    #STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+

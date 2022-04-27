@@ -1,5 +1,7 @@
 argh
+boto3
 Django
+django-storages
 gunicorn
 matplotlib
 nltk

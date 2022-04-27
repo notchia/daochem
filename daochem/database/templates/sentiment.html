@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% load static %}
+{% load staticfiles %}
 
 {% block block_content %}
 <p>
@@ -36,7 +36,7 @@ sentiment values. Just over half of respondents had a sentiment value at or belo
 </p>
 
 <p>
-<img src="{% static 'database/results/sentiment_overall_distribution.svg' %}" height="300" alt="Overall sentiment distribution"/>
+<img src="{% staticfiles 'database/results/sentiment_overall_distribution.svg' %}" height="300" alt="Overall sentiment distribution"/>
 </p>
 
 <p>
@@ -47,7 +47,7 @@ distinction between questions...)
 </p>
 
 <p>
-<img src="{% static 'database/results/sentiment_question_distribution.svg' %}" height="300" alt="Sentiment distribution by question"/>
+<img src="{% staticfiles 'database/results/sentiment_question_distribution.svg' %}" height="300" alt="Sentiment distribution by question"/>
 </p>
 
 <p>

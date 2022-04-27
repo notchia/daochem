@@ -1,11 +1,39 @@
 {% extends "base.html" %}
 
 {% block block_content %}
-<p><b>DAOchem</b> is a solution in which on- and off-chain governance data sources react to produce a holistic view of DAO governance. We integrate data on <b>smart contract parameters</b>, <b>voting activity</b>, <b>Twitter activity</b>, and <b>contributor sentiment</b> to help DAO creators, contributors and researchers understand the governance landscape.</p>
+<p><b>DAOchem</b> is a mixture of on- and off-chain governance data sources which react to 
+produce a holistic view of DAO governance. We are working to integrate data on 
+<b>smart contract parameters</b>, <b>voting activity</b>, <b>Twitter activity</b>, and 
+<b>contributor sentiment</b> to help DAO creators, contributors and researchers understand 
+the governance landscape.</p>
 
-<p>The database has the following record counts:</p>
+<p>
+An overarching question driving our work is: are DAOs "working" right now? 
+Are they what they say they are? Are they achieving their stated goals? How do DAO contributors 
+feel about their experiences? To answer these questions, we're less interested in the 
+nitty-gritty operational details specific to each DAO and more in patterns of governance 
+structures and behaviors that might be observed across DAOs. In particular:
+<ul>
+  <li>What governance systems are DAO founders choosing to implement, with what "laws"?</li>
+  <li>In what (measurable) ways are DAO members participating in governance? Does DAO member activity relate to the chosen systems?</li>
+  <li>How satisfied are DAO members with their own experiences and with the health/success of the DAO overall? How do these experiences relate to the chosen systems?</li>
+</ul>
+We are creating new datasets from a variety of sources to help us investigate:
+<ul>
+  <li>The transaction histories of the "factory" smart contracts of governance frameworks like Aragon and DAOstack, and those of the DAO governance contracts they create</li>
+  <li>Governance-related communications to the general public through Twitter </li>
+  <li>A short survey to assess DAO contributor sentiment</li>
+</ul>
+</p>
+
+<p>This database and website is a work in progress! Currently, the database has the 
+  following record counts:</p>
 <ul>
   <li><strong>Factories:</strong> {{ stats.factory_count }}</li>
-  <li><strong>DAOs:</strong> {{ stats.dao_count }}</li>
+  <li><strong>Factory transactions (roughly, daos created):</strong> {{ stats.factory_transaction_count }}</li>
+  <li><strong>Other transactions (roughly, dao activity):</strong> {{ stats.dao_transaction_count }}</li>
+  <li><strong>DAO Twitter accounts:</strong> {{ stats.twitter_accounts }}</li>
+  <li><strong>DAO tweets:</strong> {{ stats.tweets }}</li>
+  <li><strong>Survey responses:</strong> 190</li>
 </ul>
 {% endblock %}

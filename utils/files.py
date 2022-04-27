@@ -27,3 +27,8 @@ def save_json(data, fpath):
         json.dump(data, f, indent=4)
 
     return fpath
+
+
+if __name__=="__main__":
+    from daochem.settings import BASE_DIR
+    load_json(os.path.join(BASE_DIR, "tmp/trueblocks_txns_0xafdd1eb2511cd891acf2bff82dabf47e0c914d24.json"))

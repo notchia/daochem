@@ -46,6 +46,9 @@ body {
 	flex-shrink: 0;
 	font-size: 80%;
 } 
+.img {
+	width: 0.5*var(--page-width);
+}
 
 h1 {
 	display: inline-block; /* Used to keep the gradient from shifting with screen width */

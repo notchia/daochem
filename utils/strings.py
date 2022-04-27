@@ -2,6 +2,14 @@ import re
 from nltk.tokenize import sent_tokenize, word_tokenize, RegexpTokenizer
 
 
+def could_be_address(s):
+    m = re.fullmatch(r'0x[a-fA-F0-9]{40}', s)
+    if m is None:
+        return False
+    else:
+        return True
+
+
 def clean_dao_name(s):
     s_clean = re.sub('\W*\s*_*', '', s)
     s_clean = s_clean.lower()

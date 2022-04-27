@@ -6,16 +6,25 @@ from utils.files import load_json
 
 
 def index(request):
-    """View function for home page of site."""
+    """View function for home page of site"""
 
     # Generate counts of some of the main objects
     stats = load_json(os.path.join(RESULTS_DIR, "index.json"))
+    twitter = load_json(os.path.join(RESULTS_DIR, "twitter.json"))
+    stats['twitter_accounts'] = twitter['meta']['dao_count']
+    stats['tweets'] = twitter['meta']['tweet_count']
     context = {
         'stats': stats,
     }
 
     # Render the HTML template index.html with the data in the context variable
     return render(request, 'index.html', context=context)
+
+
+def about(request):
+    """Learn about the team"""
+
+    return render(request, 'about.html')
 
 
 def factories(request):
@@ -41,3 +50,17 @@ def twitter(request):
     }
 
     return render(request, 'twitter.html', context)
+
+
+def sentiment(request):
+    """Get some stats on the tweets"""
+
+    stats = load_json(os.path.join(RESULTS_DIR, "sentiment.json"))
+    context = {
+        'meta': stats['meta'],
+        'overall_sentiment': stats['overall_sentiment'],
+        'per_question': stats['per_question'],
+        'survey_questions': stats['survey_questions'],
+    }
+
+    return render(request, 'sentiment.html', context)

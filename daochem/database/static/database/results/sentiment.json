@@ -1,0 +1,52 @@
+{
+    "meta": {
+        "total_response_count": 190,
+        "unique_contributor_count": 171,
+        "unique_dao_count": 112
+    },
+    "overall_sentiment": {
+        "mean": "4.01",
+        "median": "4.00",
+        "min": "1.20",
+        "max": "5.00"
+    },
+    "per_question": {
+        "q1": {
+            "mean": "3.97",
+            "median": "4.00",
+            "min": "1.00",
+            "max": "5.00"
+        },
+        "q2": {
+            "mean": "4.05",
+            "median": "4.00",
+            "min": "1.00",
+            "max": "5.00"
+        },
+        "q3": {
+            "mean": "4.05",
+            "median": "4.00",
+            "min": "1.00",
+            "max": "5.00"
+        },
+        "q4": {
+            "mean": "3.81",
+            "median": "4.00",
+            "min": "1.00",
+            "max": "5.00"
+        },
+        "q5": {
+            "mean": "4.15",
+            "median": "4.00",
+            "min": "1.00",
+            "max": "5.00"
+        }
+    },
+    "survey_questions": {
+        "q1": "do you feel a sense of agency in the decision-making process?",
+        "q2": "do you trust the decision-making process?",
+        "q3": "does the DAO effectively accomplish its mission?",
+        "q4": "do you feel wanted and/or needed by the DAO?",
+        "q5": "does contributing to this DAO bring you a sense of fulfillment?"
+    }
+}

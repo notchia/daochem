@@ -8,7 +8,7 @@ from django.db import transaction
 from django.db.models import Q
 
 from daochem.database.models import blockchain
-from utils.strings import camel_to_snake
+from utils.strings import camel_to_snake, could_be_address
 from utils.files import load_json, save_json
 from utils.blockchain import load_txid
 
@@ -66,6 +66,15 @@ def update_or_create_transaction_record(recordDict, only_create=False, includeTr
     for c in contractsCreated_orig:
         contractsCreated.append(update_or_create_address_record(c))
 
+    # Create BlockchainAddress record for each involved address, if any
+    addressesInvolved_orig = recordDict.pop('addresses_involved', [])
+    addressesInvolved = []
+    for c in addressesInvolved_orig:
+        if (c not in contractsCreated) and not (
+            c == recordDict.get('from_address') or c == recordDict.get('from_address')
+        ):
+            addressesInvolved.append(update_or_create_address_record(c))
+
     # Create log record for each log, if any
     logs_orig = recordDict.pop('logs', [])
     logs = []
@@ -90,6 +99,8 @@ def update_or_create_transaction_record(recordDict, only_create=False, includeTr
             else:
                 if key == 'contracts_created':
                     txn.contracts_created.add(*value)
+                if key == 'addresses_involved':
+                    txn.addresses_involved.add(*value)
                 if key == 'logs':
                     txn.logs.add(*value)
                 if key == 'traces':
@@ -98,20 +109,21 @@ def update_or_create_transaction_record(recordDict, only_create=False, includeTr
         logging.debug(f"Updated transaction already in database")
         
     except blockchain.BlockchainTransaction.DoesNotExist:
-        tx = blockchain.BlockchainTransaction.objects.create(**recordDict)
-        tx.save()
-        tx.contracts_created.set(contractsCreated)
-        tx.logs.set(logs)
+        txn = blockchain.BlockchainTransaction.objects.create(**recordDict)
+        txn.save()
+        txn.contracts_created.set(contractsCreated)
+        txn.addresses_involved.set(addressesInvolved)
+        txn.logs.set(logs)
         if includeTraces:
-            tx.traces.set(traces)
+            txn.traces.set(traces)
         logging.debug("Added new transaction to database...")
 
     # Add transaction to factory contract list
     if factory is not None:
         fac = blockchain.DaoFactory.objects.get(Q(contract_address=factory))
-        fac.related_transactions.add(tx)
+        fac.related_transactions.add(txn)
 
-    return tx
+    return txn
 
 
 def update_or_create_abi(item, address=None, contract_url=None):
@@ -162,6 +174,18 @@ class TrueblocksHandler:
 
         return status
 
+    def get_transaction_count(self, addressObj):
+        address = addressObj.address
+        txIds = self._get_txids(address)
+        try:
+            count = len(txIds)
+        except:
+            count = 0
+        addressObj.chifra_list_count = count 
+        addressObj.save()
+
+        return count
+
     def add_or_update_address_traces(self, addressObj, since_block=None, local_only=False):
         """Get list of all transaction ids from index, then export trace 
         
@@ -179,13 +203,14 @@ class TrueblocksHandler:
             txIds = self._get_txids(address)
 
             # Filter transaction IDs for those since most recent appearance in chain
-            if since_block is not False:
-                if since_block is None:
-                    since_block = addressObj.most_recent_appearance()
-                else:
-                    since_block = str(since_block)
+            # TODO: FIX BROKEN MOST_RECENT_APPEARANCE FUNCTION
+            # if since_block is not False:
+            #     if since_block is None:
+            #         since_block = addressObj.most_recent_appearance()
+            #     else:
+            #         since_block = str(since_block)
 
-                txIds = list(filter(lambda id: int(id.split('.')[0]) > since_block, txIds))
+            #     txIds = list(filter(lambda id: int(id.split('.')[0]) > since_block, txIds))
 
             # Get all transaction traces
             logging.info("Running chifra traces for the list of tx ids...")
@@ -268,7 +293,8 @@ class TrueblocksHandler:
             save_json(parsed, fpath_parsed)
         if not local_only:
             # Insert transactions
-            logging.info("Adding transactions to database...")
+            print(addressObj.appears_in().count())
+            logging.info(f"Adding {len(parsed)} transactions to database...")
             self._insert_transactions(parsed)    
 
     def add_or_update_contract_abi(self, addressObj):
@@ -539,19 +565,28 @@ class TrueblocksHandler:
 
             # Get events emitted by the 'to' address
             logs = []
+            addresses_involved = [txData['from_address'], txData['to_address']] + txData.get('contracts_created', [])
             for log in tx.get('receipt', {}).get('logs', []):
-                if log['address'] == txData['to_address']:
-                    logData = {}
-                    logData['id'] = f"{txId}.{log['logIndex']}"
-                    logData['address'] = log['address']
-                    #topics = " ".join([t for t in log.get('topics', [])])
-                    #logData['topics'] = topics if len(topics) > 0 else None
-                    #logData['data'] = log.get('data)
-                    logData['event'] = log.get('articulatedLog', {}).get('name')
-                    logData['compressed_log'] = log.get('compressedLog')
-                    logs.append(logData)
+                #if log['address'] == txData['to_address']:
+                logData = {}
+                logData['id'] = f"{txId}.{log['logIndex']}"
+                logData['address'] = log['address']
+                #topics = " ".join([t for t in log.get('topics', [])])
+                #logData['topics'] = topics if len(topics) > 0 else None
+                #logData['data'] = log.get('data)
+                articulatedLog = log.get('articulatedLog', {})
+                logData['event'] = articulatedLog.get('name')
+                logData['compressed_log'] = log.get('compressedLog')
+                logs.append(logData)
+                # Add addresses to list
+                addresses_involved.append(logData['address'])
+                for value in articulatedLog.get('inputs', {}).values():
+                    if could_be_address(value):
+                        addresses_involved.append(value)
             if len(logs) > 0:
                 txData['logs'] = logs
+
+            txData['addresses_involved'] = list(set(addresses_involved))
 
             # Add transaction to list
             txList.append(txData)

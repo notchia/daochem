@@ -19,14 +19,14 @@ class TwitterAccount(models.Model):
     name = models.CharField(max_length=50, default="")
     username = models.CharField(max_length=15, default="")
     created_at = models.DateField()
-    description = models.CharField(max_length=500, default="")
+    description = models.TextField(default="")
     tweet_count = models.PositiveIntegerField()
     followers_count = models.PositiveIntegerField()
     url = models.URLField(**_STR_KWARGS)
     last_updated = models.DateField(auto_now=True)
 
     @property
-    def url(self):
+    def twitter_url(self):
         return f"https://twitter.com/{self.username}"
 
     @property
@@ -51,7 +51,7 @@ class Tweet(models.Model):
         null=True,
         related_name="tweets"
     )
-    text = models.CharField(max_length=400, default="")
+    text = models.TextField(default="")
     created_at = models.DateField()
     like_count = models.PositiveIntegerField() # For tweet, not row
     reply_count = models.PositiveIntegerField()

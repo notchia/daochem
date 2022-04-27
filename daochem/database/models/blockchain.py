@@ -12,6 +12,7 @@ class BlockchainAddress(models.Model):
     address = models.CharField(primary_key=True, max_length=42, default="0x0")
     ens = models.CharField(**_STR_KWARGS)
     contract_name = models.CharField(**_STR_KWARGS)
+    chifra_list_count = models.PositiveIntegerField(null=True)
 
     @property
     def etherscan_url(self):
@@ -23,21 +24,24 @@ class BlockchainAddress(models.Model):
         """
 
         txns = self.transactions_from.all()
-        txns.union(self.transactions_to.all())
-        txns.union(self.created_by_transaction.all())
+        txns = txns.union(self.transactions_to.all())
+        txns = txns.union(self.created_by_transaction.all())
+        txns = txns.union(self.transactions_involving.all())
 
         return txns
 
-    def most_recent_appearance(self):
-        """Return block number of most recent appearance in transactions
-        If not found, return 0"""
+    
+    # def most_recent_appearance(self):
+    # TODO: FIX BROKEN MOST_RECENT_APPEARANCE FUNCTION DUE
+    #     """Return block number of most recent appearance in transactions
+    #     If not found, return 0"""
 
-        txns = self.appears_in()
-        maxBlock = txns.aggregate(Max('block_number')).get('block_number__max')
-        if maxBlock is None:
-            maxBlock = 0 # May be None for two different reasons, so this catches both
+    #     txns = self.appears_in()
+    #     maxBlock = txns.aggregate(Max('block_number')).get('block_number__max') # THIS LINE IS SOMEHOW BROKEN - tries to access nonexistent column in db
+    #     if maxBlock is None:
+    #         maxBlock = 0 # May be None for two different reasons, so this catches both
 
-        return maxBlock
+    #     return maxBlock
 
     class Meta:
         db_table = "blockchain_addresses"
@@ -53,12 +57,13 @@ class BlockchainTransactionLog(models.Model):
     id = models.CharField(primary_key=True, max_length=50, default="0.0.0") # transactionId.logIndex
     address = models.ForeignKey(
         BlockchainAddress, 
-        on_delete=models.CASCADE, 
+        on_delete=models.SET_NULL, 
+        null=True,
         related_name="logs_from"
     )
     topics = models.CharField(max_length=267, null=True) # up to 4 space-separated 32-bit words
     event = models.CharField(max_length=200, null=True)
-    compressed_log = models.CharField(max_length=1000, null=True)
+    compressed_log = models.TextField(null=True)
 
     @property
     def log_dict(self):
@@ -72,21 +77,23 @@ class BlockchainTransactionTrace(models.Model):
     id = models.CharField(primary_key=True, max_length=50, default="0.0.0") # transactionId.traceAddress
     from_address = models.ForeignKey(
         BlockchainAddress, 
-        on_delete=models.CASCADE, 
+        on_delete=models.SET_NULL, 
+        null=True,
         related_name="traces_from"
     )
     to_address = models.ForeignKey(
         BlockchainAddress, 
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL, 
+        null=True,
         related_name="traces_to"
     )
     value = models.FloatField()
-    compressed_trace = models.CharField(max_length=1000, null=True)
+    compressed_trace = models.TextField(max_length=1000, null=True)
     error = models.CharField(max_length=20, null=True)
     outputs = models.CharField(max_length=1000, null=True) # List of values concatenated with spaces
     delegate = models.ForeignKey(
         BlockchainAddress, 
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         related_name="delegate_for_trace"
     )
@@ -105,12 +112,14 @@ class BlockchainTransaction(models.Model):
     block_number = models.PositiveIntegerField()
     from_address = models.ForeignKey(
         BlockchainAddress, 
-        on_delete=models.CASCADE, 
+        on_delete=models.SET_NULL, 
+        null=True,
         related_name="transactions_from"
     )
     to_address = models.ForeignKey(
         BlockchainAddress, 
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL, 
+        null=True,
         related_name="transactions_to"
     )
     value = models.FloatField()
@@ -129,6 +138,10 @@ class BlockchainTransaction(models.Model):
     logs = models.ManyToManyField(
         BlockchainTransactionLog,
         related_name='originating_from_transaction'
+    )
+    addresses_involved = models.ManyToManyField(
+        BlockchainAddress,
+        related_name="transactions_involving"
     )
 
     @property
@@ -156,7 +169,7 @@ class BlockchainTransaction(models.Model):
 class ContractAbi(models.Model):
     address = models.ForeignKey(
         BlockchainAddress, 
-        on_delete=models.CASCADE, 
+        on_delete=models.SET_NULL, 
         null=True,
         related_name="abis"
     )
@@ -194,13 +207,15 @@ class DaoFramework(models.Model):
 class DaoFactory(models.Model):
     dao_framework = models.ForeignKey(
         DaoFramework, 
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
         related_name='factories'
     )
     version = models.CharField(max_length=200, default='not specified')
     contract_address = models.OneToOneField(
         BlockchainAddress,
-        on_delete=models.CASCADE
+        on_delete=models.SET_NULL,
+        null=True
     )
     related_transactions = models.ManyToManyField(
         BlockchainTransaction,

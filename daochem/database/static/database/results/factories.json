@@ -1,44 +1,59 @@
 [
     {
-        "name": "Aragon, version 0.6",
-        "address": "0x595b34c93aa2c2ba0a38daeede629a0dfbdcc559",
-        "address_url": "https://etherscan.io/address/0x595b34c93aa2c2ba0a38daeede629a0dfbdcc559",
-        "daos_created_count": 463
-    },
-    {
-        "name": "Aragon, version 0.7",
-        "address": "0xc29f0599df12eb4cbe1a34354c4bac6d944071d1",
-        "address_url": "https://etherscan.io/address/0xc29f0599df12eb4cbe1a34354c4bac6d944071d1",
-        "daos_created_count": 0
-    },
-    {
         "name": "Aragon, version 0.8",
         "address": "0xb9da44c051c6cc9e04b7e0f95e95d69c6a6d8031",
         "address_url": "https://etherscan.io/address/0xb9da44c051c6cc9e04b7e0f95e95d69c6a6d8031",
-        "daos_created_count": 851
-    },
-    {
-        "name": "Aragon, version 0.8.1",
-        "address": "0x7378ad1ba8f3c8e64bbb2a04473edd35846360f1",
-        "address_url": "https://etherscan.io/address/0x7378ad1ba8f3c8e64bbb2a04473edd35846360f1",
-        "daos_created_count": 0
+        "daos_created_count": 851,
+        "abis": [
+            {
+                "name": "newDAO",
+                "inputs": {
+                    "_root": "address"
+                }
+            }
+        ]
     },
     {
         "name": "DAOhaus, version v2.1",
         "address": "0x38064F40B20347d58b326E767791A6f79cdEddCe",
         "address_url": "https://etherscan.io/address/0x38064F40B20347d58b326E767791A6f79cdEddCe",
-        "daos_created_count": 233
+        "daos_created_count": 233,
+        "abis": [
+            {
+                "name": "summonMoloch",
+                "inputs": {
+                    "_summoner": "address[]",
+                    "_dilutionBound": "uint256",
+                    "_approvedTokens": "address[]",
+                    "_periodDuration": "uint256",
+                    "_summonerShares": "uint256[]",
+                    "_proposalDeposit": "uint256",
+                    "_processingReward": "uint256",
+                    "_gracePeriodLength": "uint256",
+                    "_votingPeriodLength": "uint256"
+                }
+            }
+        ]
     },
     {
         "name": "DAOstack, version 2019-05-27",
         "address": "0x5bcaf9bfd511166a6e0bcfe24b42f5932f43f4b7",
         "address_url": "https://etherscan.io/address/0x5bcaf9bfd511166a6e0bcfe24b42f5932f43f4b7",
-        "daos_created_count": 46
-    },
-    {
-        "name": "Tribute, version openlaw_tribute",
-        "address": "0xf44e53e7474588494b3bec75898278050d99a8ce",
-        "address_url": "https://etherscan.io/address/0xf44e53e7474588494b3bec75898278050d99a8ce",
-        "daos_created_count": 25
+        "daos_created_count": 46,
+        "abis": [
+            {
+                "name": "forgeOrg",
+                "inputs": {
+                    "_cap": "uint256",
+                    "_orgName": "string",
+                    "_founders": "address[]",
+                    "_tokenName": "string",
+                    "_tokenSymbol": "string",
+                    "_uController": "address",
+                    "_foundersTokenAmount": "uint256[]",
+                    "_foundersReputationAmount": "uint256[]"
+                }
+            }
+        ]
     }
 ]

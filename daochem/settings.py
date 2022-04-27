@@ -15,7 +15,7 @@ import logging
 from pathlib import Path
 
 # Set this to True when running locally, False in production!
-LOCAL = True
+LOCAL = False
 
 if LOCAL:
     from dotenv import load_dotenv

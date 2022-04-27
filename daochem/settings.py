@@ -154,7 +154,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'daochem/database/static'),
-    'https://daochem.nyc3.digitaloceanspaces.com/'
 ]
 
 # Default primary key field type

@@ -1,14 +1,61 @@
 {% extends "base.html" %}
 
-{% block block_content %}
+{% load static %}
 
-{% for dao in daos %}
-  <div class="card">
-    <div class="container">
-      <h2><b>{{ fac.name }}</b></h2>
-      <p>Ethereum address: <a href="{{ fac.address_url }}">{{ fac.address }}</a></p>
-      <p>Number of DAOs created: {{ fac.daos_created_count }}</p>
-    </div>
-  </div>
+{% block block_content %}
+<p>
+Maybe a DAO is a whole which is greater than the sum of its parts. In that case, let's bring
+some attention to the most basic elements of a DAO: individual contributors. People contribute 
+to DAOs for a variety of reasons, and expect a variety of things in return (a very interesting 
+question in its own right!). So how well do contributors think the emergent phenomenon of the 
+DAO is able to sustain itself while supporting its contributors' needs?
+</p>
+
+<p>
+At ETHDenver 2022, we developed and deployed a short survey intended for all and all DAO contributors.
+We asked respondents to rate their experience with each DAO they contributed to on a scale of one to five, 
+on five aspects:
+<ol>
+  {% for q, words in survey_questions.items %}
+  <li>{{ words }}</li>
   {% endfor %}
+</ol>
+We then averaged each respondent's choices responses to obtain an overall "sentiment" value. 
+In retrospect, we would also have loved to get contributors' thoughts on whether they felt fairly 
+compensated for their time and effort. Let us know what other dimensions of individual involvement 
+in DAOs you think should be investigated!
+</p>
+
+<p>
+Over the course of the event, we collected {{ meta.total_response_count }} responses from 
+{{ meta.unique_contributor_count }} unique contributors about {{ meta.unique_dao_count }} unique DAOs. 
+<strong>Overall DAO contributor sentiment</strong> (on a 1 to 5 scale) averaged at {{ overall_sentiment.mean }}. 
+Though most common overall sentiment value was a solid 5, the distribution spreads the full range of 
+sentiment values. Just over half of respondents had a sentiment value at or below 4, and about 
+17% were at best ambivalent at or below a 3. 
+</p>
+
+<p>
+<img src="{% static 'database/results/sentiment_overall_distribution.svg' %}" height="300" alt="Overall sentiment distribution"/>
+</p>
+
+<p>
+We were curious to know if there were particular aspects of their experience for which DAO 
+contributors were generally most satisfied. As it turns out, our survey respondents felt pretty 
+similarly about each aspect we asked about. (Though this could mean we need a greater 
+distinction between questions...)
+</p>
+
+<p>
+<img src="{% static 'database/results/sentiment_question_distribution.svg' %}" height="300" alt="Sentiment distribution by question"/>
+</p>
+
+<p>
+Of course this is a pretty small sample, taken non-randomly at an event full of people who cared 
+enough to show up from across the world to a single physical location, so take these findings with 
+a grain of salt.
+</p>
+
 {% endblock %}
+
+

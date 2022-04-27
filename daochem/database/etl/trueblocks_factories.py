@@ -1,4 +1,7 @@
 import logging
+from django.db import transaction
+from django.db.utils import ProgrammingError
+from psycopg2.errors import UndefinedColumn
 
 from daochem.database.models.blockchain import DaoFactory, EtlMonitor
 from daochem.database.etl.trueblocks import TrueblocksHandler
@@ -28,6 +31,30 @@ def scrape_factories():
     #monitor.last_scrape_block = indexStatus['last_pinned_block']
 
 
+def get_address_counts():
+    tb = TrueblocksHandler()
+    for factory in DaoFactory.objects.all():
+        print(factory)
+        transactions = factory.related_transactions.all()
+        txnCount = 0
+        for txn in transactions:
+            print(txnCount)
+            with transaction.atomic():
+                #try:
+                contracts = txn.contracts_created.all()
+                max_count = 0
+                for contract in contracts:
+                    count = tb.get_transaction_count(contract)
+                    if count > max_count:
+                        max_count = count
+                print(f"Found {max_count} transactions")
+                #except Exception as e:
+                #    # TODO: figure out why this happens so ungracefully...
+                #    logging.warning(e)
+            txnCount += 1
+
+
+
 if __name__ == "__main__":
-    scrape_factories()
+    get_address_counts()
     

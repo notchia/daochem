@@ -177,10 +177,14 @@ class TrueblocksHandler:
     def get_transaction_count(self, addressObj):
         address = addressObj.address
         txIds = self._get_txids(address)
-        address.chifra_list_count = len(txIds)
-        address.save()
-        logging.status(f"Updated txn count to {len(txIds)} for {address}")
-        return 
+        try:
+            count = len(txIds)
+        except:
+            count = 0
+        addressObj.chifra_list_count = count 
+        addressObj.save()
+
+        return count
 
     def add_or_update_address_traces(self, addressObj, since_block=None, local_only=False):
         """Get list of all transaction ids from index, then export trace 
@@ -199,13 +203,14 @@ class TrueblocksHandler:
             txIds = self._get_txids(address)
 
             # Filter transaction IDs for those since most recent appearance in chain
-            if since_block is not False:
-                if since_block is None:
-                    since_block = addressObj.most_recent_appearance()
-                else:
-                    since_block = str(since_block)
+            # TODO: FIX BROKEN MOST_RECENT_APPEARANCE FUNCTION
+            # if since_block is not False:
+            #     if since_block is None:
+            #         since_block = addressObj.most_recent_appearance()
+            #     else:
+            #         since_block = str(since_block)
 
-                txIds = list(filter(lambda id: int(id.split('.')[0]) > since_block, txIds))
+            #     txIds = list(filter(lambda id: int(id.split('.')[0]) > since_block, txIds))
 
             # Get all transaction traces
             logging.info("Running chifra traces for the list of tx ids...")

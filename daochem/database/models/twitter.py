@@ -4,6 +4,15 @@ from utils.strings import tokenize
 
 _STR_KWARGS = {'max_length': 200, 'null': True}
 
+KEYWORDS_DICT = {
+    'propose': ['proposal', 'proposals'],
+    'vote': ['vote', 'votes', 'voter', 'voters', 'voting'],
+    'decide': ['decide', 'decision', 'decisionmaking', 'decision-making'],
+    'discuss': ['forum'],
+    'governance': ['governance'],
+    'treasury': ['treasury', 'budget']
+}
+
 
 class TwitterAccount(models.Model):
     id = models.CharField(primary_key=True, max_length=30, default="0")
@@ -17,6 +26,10 @@ class TwitterAccount(models.Model):
     last_updated = models.DateField(auto_now=True)
 
     @property
+    def url(self):
+        return f"https://twitter.com/{self.username}"
+
+    @property
     def description_tokenized(self):
         return tokenize(self.description)
 
@@ -24,10 +37,7 @@ class TwitterAccount(models.Model):
         return " ".join(self.description_tokenized) # Not stored as property to reduce redundancy
 
     def __str__(self):
-        name = self.ens if self.ens is not None else self.address
-        if self.contract_name is not None:
-            name += f" ({self.contract_name})"
-        return name
+        return self.username
 
     class Meta:
         db_table = "twitter_accounts"
@@ -76,15 +86,6 @@ def governance_topics(text, names):
     """Find topics in tokenized text"""
 
     text_tokenized = tokenize(text)
-
-    KEYWORDS_DICT = {
-        'propose': ['proposal', 'proposals'],
-        'vote': ['vote', 'votes', 'voter', 'voters', 'voting'],
-        'decide': ['decide', 'decision', 'decisionmaking', 'decision-making'],
-        'discuss': ['forum'],
-        'governance': ['governance'],
-        'treasury': ['treasury', 'budget']
-    }
 
     keywords = [
         topic for topic, keywords in KEYWORDS_DICT.items() if 

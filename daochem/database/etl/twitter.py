@@ -50,10 +50,10 @@ class TwitterHandler():
             dao.twitter = id
             dao.save()
 
-    def upsert_dao_tweets(self, dao):
+    def upsert_dao_tweets(self, dao, kwargs=None):
         """Given Dao model object, insert or update its Twitter user information (description, metrics, etc.)"""
         
-        response = self._get_dao_tweets(dao)
+        response = self._get_dao_tweets(dao, kwargs=kwargs)
         logging.info(f"Got {len(response)} tweets")
         transformed = self._transform_tweets(response, author_id=dao.twitter.id)
         logging.info("Adding tweets to database...")
@@ -72,14 +72,14 @@ class TwitterHandler():
         
         return self._get_user_info(username)
 
-    def _get_dao_tweets(self, dao, since_id=None):
+    def _get_dao_tweets(self, dao, kwargs=None):
         """Given Dao model object, get its tweets"""
 
         if dao.twitter is None:
             return {}
         id = dao.twitter.id
 
-        return self._get_tweets(id, since_id=since_id)
+        return self._get_tweets(id, kwargs=kwargs)
 
     def _get_user_info(self, username):
         """Get user information (description, metrics, etc.) given username"""
@@ -89,22 +89,22 @@ class TwitterHandler():
         
         return user_info
 
-    def _get_tweets(self, id, since_id=None):
+    def _get_tweets(self, id, kwargs=None):
         """Get all tweets given user id"""
 
-        kwargs = {
+        _kwargs = {
             'exclude': ['retweets', 'replies'], 
             'tweet_fields': ['id', 'text', 'created_at', 'entities', 'public_metrics'],
             'max_results': 100,
         }
-        if since_id is not None:
-            kwargs['since_id'] = since_id
 
-        result = self.client.get_users_tweets(id, **kwargs)
+        _kwargs.update(kwargs)
+
+        result = self.client.get_users_tweets(id, **_kwargs)
         tweets = result.get('data', [])
         token = result.get('meta',{}).get('next_token',None)
         while token is not None:
-            result = self.client.get_users_tweets(id, **kwargs, pagination_token=token)
+            result = self.client.get_users_tweets(id, **_kwargs, pagination_token=token)
             tweets.extend(result.get('data', []))  
             token = result.get('meta',{}).get('next_token', None)   
 

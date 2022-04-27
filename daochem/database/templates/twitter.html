@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block block_content %}
+<p>
+Twitter is a common method by which a DAO's leadership or spokesperson communicates 
+with both the DAO's members and contributors and with its broader community of, for 
+example, protocol users. We are interested in understanding how DAOs are using Twitter 
+to communicate about their governance. 
+</p>
+
+<p>
+We identify governance-related tweets by searching the tokenized text for keywords 
+related to voting ("vote(s)", "voter(s)", "voting"), proposals (propose", "proposal(s)"), 
+decisionmaking ("decide", "decision", "decisionmaking", "decision-making"), and 
+budgeting ("treasury", "budget"), as well as the words "governance" and "forum". 
+</p>
+
+<p>
+Using the <a href="https://developer.twitter.com/en/docs/twitter-api">Twitter API</a> 
+via <a href="https://www.tweepy.org/">Tweepy</a>, we have collected {{ meta.tweet_count }} 
+tweets, ranging back several years, from the {{ meta.dao_count }} DAOs which have at 
+least {{ meta.MIN_TOTAL_TWEETS }} available tweets (first-order only: not retweets, 
+not replies). Of these, we have identified {{ meta.governance_tweet_count }} as relating 
+to governance. 
+</p>
+
+<strong>Governance-related tweets per DAO, as a percentage of total tweets:</strong>
+<ul>
+  <li><strong>Mean:</strong> {{ gov_tweet.mean }}%</li>
+  <li><strong>Median:</strong> {{ gov_tweet.median }}%</li>
+  <li><strong>Min:</strong> {{ gov_tweet.min }}%</li>
+  <li><strong>Max:</strong> {{ gov_tweet.max }}%</li>
+</ul>
+<strong>Median governance topic frequency per DAOs, as a percentage of governance-related tweets:</strong>
+<ul>
+  {% for topic, stats in gov_topics.items %}
+  <li><strong>{{ topic }}:</strong> {{ stats.median }}% (range: {{ stats.min }}-{{ stats.max }}%) </li>
+  {% endfor %}
+</ul>
+{% endblock %}

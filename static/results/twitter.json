@@ -1,10 +1,10 @@
 {
     "meta": {
-        "MIN_TOTAL_TWEETS": 100
+        "MIN_TOTAL_TWEETS": 100,
+        "dao_count": 105,
+        "tweet_count": 45170,
+        "governance_tweet_count": 5137
     },
-    "dao_count": 128,
-    "tweet_count": 45702,
-    "governance_tweet_count": 5137,
     "accounts": {
         "api3": {
             "twitter_username": "API3DAO",
@@ -2430,7 +2430,7 @@
     },
     "governance_topic_stats": {
         "decide": {"max": 100.0, "mean": 6.6, "median": 2.4, "min": 0.0},
-        "discuss": {"max": 100.0, "mean": 6.8, "median": 2.2, "min": 0.0},
+        "forum": {"max": 100.0, "mean": 6.8, "median": 2.2, "min": 0.0},
         "governance": {"max": 100.0, "mean": 27.5, "median": 22.0, "min": 0.0},
         "propose": {"max": 88.9, "mean": 30.1, "median": 26.7, "min": 0.0},
         "treasury": {"max": 70.0, "mean": 12.2, "median": 7.7, "min": 0.0},

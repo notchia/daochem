@@ -16,25 +16,20 @@ MIN_TOTAL_TWEETS = 100 # Only include accounts with *at least* this many total t
 
 if not os.path.isfile(RESULTS_FILE):
 
-    # Get overall twitter stats for twitter.html
     accounts = TwitterAccount.objects.all()
     tweets = Tweet.objects.all()
-    stats = {
-        'meta': {
-            'MIN_TOTAL_TWEETS': MIN_TOTAL_TWEETS
-        },
-        'dao_count': accounts.count(),
-        'tweet_count': tweets.count(),
-        'governance_tweet_count': tweets.filter(is_governance_related=True).count()
-    }
 
     # Get per-account stats for accounts that meet the tweet threshold
     accountsDict = {}
+    accounts_count = 0
+    tweets_count = 0
     for account in TwitterAccount.objects.all():
         tweets = account.tweets.all()
         tweet_count = tweets.count()
 
         if (tweet_count > MIN_TOTAL_TWEETS):
+            accounts_count += 1
+            tweets_count += tweet_count
             # Get tweet rate info
             birthday = account.created_at
             earliest = tweets.order_by('created_at')[0].created_at
@@ -72,6 +67,16 @@ if not os.path.isfile(RESULTS_FILE):
         else:
             print(f"                           EXCLUDING {account.name}")
 
+    # Get overall twitter stats for twitter.html
+    stats = {
+        'meta': {
+            'MIN_TOTAL_TWEETS': MIN_TOTAL_TWEETS,
+            'dao_count': accounts_count,
+            'tweet_count': tweets_count,
+            'governance_tweet_count': tweets.filter(is_governance_related=True).count()
+        },
+    }
+
     stats['accounts'] = accountsDict
 
     df = pd.DataFrame.from_dict(accountsDict,orient='index')
@@ -94,6 +99,9 @@ else:
         gov_tweets = row['gov_tweet_count']
         topic_pcts = {col: float(f"{100*val/gov_tweets:.1f}") for col, val in row['gov_tweet_keywords'].items()}
         df_cols = df_cols.append(pd.Series(topic_pcts, name=i))
+
+    print(len(df.index))
+    print(df['tweet_count'].agg('sum'))
 
     # Get stats on topic frequency (%) across all daos
     topic_stats = {}

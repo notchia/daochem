@@ -1,11 +1,7 @@
 import os
 from django.shortcuts import render
-from django.http import HttpResponse
-from django.db.models import Q
 
 from daochem.database.analysis.base import RESULTS_DIR
-from daochem.database.models.blockchain import ContractAbi, DaoFactory
-from daochem.database.models.daos import Dao
 from utils.files import load_json
 
 
@@ -32,3 +28,16 @@ def factories(request):
 
     return render(request, 'factories.html', context)
 
+
+def twitter(request):
+    """Get some stats on the tweets"""
+
+    stats = load_json(os.path.join(RESULTS_DIR, "twitter.json"))
+    context = {
+        'meta': stats['meta'],
+        'accounts': stats['accounts'],
+        'gov_tweet': stats['governance_tweet_stats'],
+        'gov_topics': stats["governance_topic_stats"],
+    }
+
+    return render(request, 'twitter.html', context)

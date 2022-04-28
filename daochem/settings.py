@@ -160,8 +160,8 @@ else:
     # settings
     #AWS_ACCESS_KEY_ID = os.getenv('STORAGE_API_KEY')
     #AWS_SECRET_ACCESS_KEY = os.getenv('STORAGE_API_SECRET')   
-    AWS_STORAGE_BUCKET_NAME = os.getenv('STORAGE_BUCKET_NAME')
     AWS_DEFAULT_ACL = 'public-read'
+    AWS_STORAGE_BUCKET_NAME = 'daochem'
     AWS_S3_REGION_NAME='nyc3'
     AWS_S3_ENDPOINT = f'{AWS_STORAGE_BUCKET_NAME}.{AWS_S3_REGION_NAME}.digitaloceanspaces.com'
     #AWS_S3_ENDPOINT_URL = f'https://{AWS_S3_ENDPOINT}'

@@ -1,7 +1,7 @@
 import logging
 from django.db import transaction
 
-from daochem.database.models.blockchain import BlockchainTransaction, DaoFactory, EtlMonitor
+from daochem.database.models.blockchain import DaoFactory
 from daochem.database.etl.trueblocks import TrueblocksHandler
 
 
@@ -28,18 +28,11 @@ def scrape_factories():
     """
     
     tb = TrueblocksHandler()
-    #indexStatus = tb.get_index_status()
-
     for factory in DaoFactory.objects.all():
-        if factory.version in ['0.6', '0.8', '0.8.1', 'openlaw_tribute', '2019-05-27']: # go back to '0.7' and 'v2.1' 
-            continue
         logging.info(f"Processing {factory}...")
         scrape_factory(factory, tb=tb)
 
-    #monitor = EtlMonitor.objects.get(pk='trueblocks')
-    #monitor.last_scrape_time = datetime.now()
-    #monitor.last_pinned_time = indexStatus['last_pinned_time']
-    #monitor.last_scrape_block = indexStatus['last_pinned_block']
+    # TODO: update EtlMonitor (once initialized)
 
 
 def get_txn_counts_contract_created(txnSet, tb=None):
@@ -59,28 +52,18 @@ def get_txn_counts_contract_created(txnSet, tb=None):
             logging.info(f"Found {max_count} transactions for the DAO created by txn {txn.pk}")
 
 
-def get_address_counts():
+def get_txn_counts():
+    """Get transaction counts for all contracts created by all factories"""
+
     tb = TrueblocksHandler()
     for factory in DaoFactory.objects.all():
-        print(factory)
-        transactions = factory.related_transactions.all()
-        txnCount = 0
-        for txn in transactions:
-            print(txnCount)
-            with transaction.atomic():
-                contracts = txn.contracts_created.all()
-                max_count = 0
-                for contract in contracts:
-                    count = tb.add_or_update_transaction_count(contract)
-                    if count > max_count:
-                        max_count = count
-                print(f"Found {max_count} transactions")
-            txnCount += 1
-
+        logging.info("Processing {factory}...")
+        txnSet = factory.related_transactions.all()
+        get_txn_counts_contract_created(txnSet, tb=tb)
 
 
 if __name__ == "__main__":
-    #get_address_counts()
+
     factoryId = 5 # DAOhaus
     scrape_factory(factoryId)
     txnSet = DaoFactory.objects.get(pk=factoryId).related_transactions.all()

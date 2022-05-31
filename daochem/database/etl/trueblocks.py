@@ -174,19 +174,31 @@ class TrueblocksHandler:
 
         return status
 
-    def get_transaction_count(self, addressObj):
+    def add_or_update_transaction_count(self, addressObj):
+        """Get list of transactions found for an address, then update chifra_list_count
+        Log shows whether this value was changed
+        """
+
         address = addressObj.address
         txIds = self._get_txids(address)
         try:
             count = len(txIds)
         except:
             count = 0
-        addressObj.chifra_list_count = count 
-        addressObj.save()
+        
+        originalCount = addressObj.chifra_list_count
+        if originalCount is None:
+            originalCount = 0
+        if count > originalCount:
+            logging.info(f"Found {count-originalCount} new transactions")
+            addressObj.chifra_list_count = count 
+            addressObj.save()
+        else:
+            logging.info(f"No new transactions since {addressObj.record_modified_date} ({originalCount})")
 
         return count
 
-    def add_or_update_address_traces(self, addressObj, since_block=None, local_only=False):
+    def add_or_update_address_traces(self, addressObj, since_block=None, local_only=False, reuseList=False):
         """Get list of all transaction ids from index, then export trace 
         
         since_block options: 
@@ -198,25 +210,20 @@ class TrueblocksHandler:
         fpath = os.path.join(os.getcwd(), f"tmp/trueblocks_traces_{address}.json")
         fpath_parsed = os.path.join(os.getcwd(), f"tmp/trueblocks_{address}_parsed.json")
 
-        if not os.path.isfile(fpath):
+        if not os.path.isfile(fpath) or not reuseList:
             # Get list of all transaction IDs
             txIds = self._get_txids(address)
 
-            # Filter transaction IDs for those since most recent appearance in chain
-            # TODO: FIX BROKEN MOST_RECENT_APPEARANCE FUNCTION
-            # if since_block is not False:
-            #     if since_block is None:
-            #         since_block = addressObj.most_recent_appearance()
-            #     else:
-            #         since_block = str(since_block)
-
-            #     txIds = list(filter(lambda id: int(id.split('.')[0]) > since_block, txIds))
+            # Filter transaction IDs for those not yet in database
+            existingTxIds = blockchain.BlockchainTransaction.objects.filter(pk__in=txIds).values_list('pk', flat=True)
+            newTxIds = list(filter(lambda id: id not in existingTxIds, txIds))
+            logging.info(f"Processing {len(newTxIds)} transactions (of {len(txIds)} total transactions found)")
 
             # Get all transaction traces
             logging.info("Running chifra traces for the list of tx ids...")
             query_trace = {
                 'function': 'traces', 
-                'value': txIds, 
+                'value': newTxIds, 
                 'format': 'json',
                 'args': ['articulate']
             }  

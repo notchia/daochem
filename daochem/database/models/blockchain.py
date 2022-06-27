@@ -31,19 +31,6 @@ class BlockchainAddress(models.Model):
 
         return txns
 
-    
-    # def most_recent_appearance(self):
-    # TODO: FIX BROKEN MOST_RECENT_APPEARANCE FUNCTION DUE
-    #     """Return block number of most recent appearance in transactions
-    #     If not found, return 0"""
-
-    #     txns = self.appears_in()
-    #     maxBlock = txns.aggregate(Max('block_number')).get('block_number__max') # THIS LINE IS SOMEHOW BROKEN - tries to access nonexistent column in db
-    #     if maxBlock is None:
-    #         maxBlock = 0 # May be None for two different reasons, so this catches both
-
-    #     return maxBlock
-
     class Meta:
         db_table = "blockchain_addresses"
 

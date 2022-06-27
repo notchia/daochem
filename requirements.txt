@@ -1,7 +1,9 @@
 argh
 boto3
 Django
+django-extensions
 django-storages
+graphviz
 gunicorn
 matplotlib
 nltk

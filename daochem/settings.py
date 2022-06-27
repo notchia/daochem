@@ -63,7 +63,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'daochem.database.apps.DaochemConfig'
+    'daochem.database.apps.DaochemConfig',
+    'django_extensions'
 ]
 
 MIDDLEWARE = [

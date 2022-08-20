@@ -14,22 +14,33 @@ SURVEY_QUESTIONS = {
     'q5': "does contributing to this DAO bring you a sense of fulfillment?", 
 }
 
+
+class DeepdaoEntry(models.Model):
+    organization_name = models.CharField(max_length=50, default="")
+    description = models.CharField(max_length=50, null=True)
+    url = models.URLField(**_STR_KWARGS)
+
+    @property
+    def name_cleaned(self):
+        return clean_dao_name(self.organization_name)
+
+    class Meta:
+        db_table = "deepdao_daos"
+
+    def __str__(self):
+        return self.id
+
+
+
 class DeepdaoAddress(models.Model):
     id = models.CharField(primary_key=True, max_length=200, default="")
     type = models.CharField(max_length=50, null=True)
-    url = models.URLField(**_STR_KWARGS)
-    organization_name = models.CharField(max_length=50, default="")
-    description = models.CharField(max_length=50, null=True)
     address = models.ForeignKey(
         BlockchainAddress,
         on_delete=models.CASCADE,
         null=True,
         related_name='deepdao_info'
     )
-
-    @property
-    def name_cleaned(self):
-        return clean_dao_name(self.organization_name)
 
     class Meta:
         db_table = "deepdao_addresses"

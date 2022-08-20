@@ -1,4 +1,3 @@
-import os
 from django.db import models
 from django.db.models import Max
 from datetime import datetime

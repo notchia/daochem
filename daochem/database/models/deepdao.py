@@ -5,8 +5,10 @@ from daochem.database.models.blockchain import BlockchainAddress
 
 
 class DeepdaoCategory(models.Model):
+    """Sourced from `organizations/categories` records"""
+
     name = models.CharField(max_length=50, unique=True)
-    deepdao_id = models.CharField(max_length=36, unique=True)
+    deepdao_id = models.CharField(max_length=36, unique=True) # category_id
 
     class Meta:
         db_table = "deepdao_categories"
@@ -16,8 +18,10 @@ class DeepdaoCategory(models.Model):
 
 
 class DeepdaoGovPlatform(models.Model):
-    name = models.CharField(max_length=50, unique=True)
-    deepdao_id = models.CharField(max_length=36, unique=True)
+    """Sourced from `ecosystem/gov_platforms` records"""
+
+    name = models.CharField(max_length=50, unique=True) # platformTitle
+    deepdao_id = models.CharField(max_length=36, unique=True) # platformId
 
     class Meta:
         db_table = "deepdao_gov_platforms"
@@ -27,11 +31,12 @@ class DeepdaoGovPlatform(models.Model):
 
 
 class DeepdaoDao(models.Model):
+    """Sourced from `organizations` records"""
+
     name = models.TextField()
     description = models.TextField()
-    url = models.URLField(null=True)
-    category = models.CharField(max_length=50, null=True)
-    deepdao_id = models.CharField(max_length=36, unique=True)
+    category = models.CharField(max_length=50, null=True) # populate based on category search
+    deepdao_id = models.CharField(max_length=36, unique=True) # organizationId
 
     class Meta:
         db_table = "deepdao_daos"
@@ -41,10 +46,12 @@ class DeepdaoDao(models.Model):
 
 
 class DeepdaoAddress(models.Model):
+    """Sourced from `governance` field in each `organization` record"""
+
     name = models.CharField(max_length=50)
-    address = models.URLField()
-    type = models.CharField(max_length=50) # TODO: add models.TextChoices class to populate this based on the available options 
-    blockchain_address = models.ForeignKey(
+    address = models.CharField(max_length=100)
+    platform = models.CharField(max_length=50) # e.g., "SNAPSHOT". TODO: add models.TextChoices class to populate this based on the available options 
+    blockchain_address = models.ForeignKey( # If the address is on Ethereum specifically, create this record if it doesn't yet exist. If ENS address, look up the current owner of the address.
         BlockchainAddress,
         on_delete=models.CASCADE,
         null=True,
@@ -56,7 +63,7 @@ class DeepdaoAddress(models.Model):
         null=False,
         related_name='deepdao_info'
     )
-    deepdao_id = models.CharField(max_length=36, unique=True)
+    deepdao_id = models.CharField(max_length=36, unique=True) # id
 
     class Meta:
         db_table = "deepdao_addresses"
@@ -64,4 +71,4 @@ class DeepdaoAddress(models.Model):
         unique_together = ('address', 'type',)
 
     def __str__(self):
-        return self.deepdao_address
+        return f"{self.platform}: {self.address}"

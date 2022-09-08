@@ -1,6 +1,5 @@
 from django.db import models
 
-from utils.strings import clean_dao_name
 from daochem.database.models.blockchain import BlockchainAddress
 
 
@@ -12,19 +11,6 @@ class DeepdaoCategory(models.Model):
 
     class Meta:
         db_table = "deepdao_categories"
-
-    def __str__(self):
-        return self.name
-
-
-class DeepdaoGovPlatform(models.Model):
-    """Sourced from `ecosystem/gov_platforms` records"""
-
-    name = models.CharField(max_length=50, unique=True) # platformTitle
-    deepdao_id = models.CharField(max_length=36, unique=True) # platformId
-
-    class Meta:
-        db_table = "deepdao_gov_platforms"
 
     def __str__(self):
         return self.name
@@ -45,13 +31,61 @@ class DeepdaoDao(models.Model):
         return self.name
 
 
+class DeepdaoAddressDeprecated(models.Model):
+    """TODO: port over what's in this table to the new format, if it's not already in there"""
+
+    id = models.CharField(primary_key=True, max_length=200, default="")
+    type = models.CharField(max_length=50, null=True)
+    url = models.URLField(max_length=200, null=True)
+    organization_name = models.CharField(max_length=50, default="")
+    description = models.CharField(max_length=50, null=True)
+    address = models.ForeignKey(
+        BlockchainAddress,
+        on_delete=models.CASCADE,
+        null=True,
+        related_name='deepdao_info'
+    )
+
+    class Meta:
+        db_table = "deepdao_addresses_deprecated"
+
+    def __str__(self):
+        return self.id
+
+'''
 class DeepdaoAddress(models.Model):
     """Sourced from `governance` field in each `organization` record"""
 
+    class Platforms(models.TextChoices):
+        """Available options under governance>platform for an organization as of 08/30/2022 
+        
+        The first value in the tuple is what is returned by the API.
+        Note that these are not directly connected to the values returned by the ecosystems/gov_platforms API call.
+        """
+
+        NONE = '', 'Not specified' 
+        ARAGON = 'ARAGON', 'Aragon'
+        COLONY = 'COLONY', 'Colony'
+        COMPOUND = 'COMPOUND', 'Compound'
+        DAOHAUS = 'DAOHAUS', 'DAOhaus'
+        DAOSTACK = 'DAOSTACK', 'DAOstack'
+        INDEPENDENT = 'INDEPENDENT', 'Independent'
+        OPENLAW = 'OPENLAW', 'OpenLaw'
+        REALMS = 'REALMS', 'Realms'
+        SAFE = 'SAFE', 'Safe'
+        SNAPSHOT = 'SNAPSHOT', 'Snapshot' 
+
     name = models.CharField(max_length=50)
     address = models.CharField(max_length=100)
-    platform = models.CharField(max_length=50) # e.g., "SNAPSHOT". TODO: add models.TextChoices class to populate this based on the available options 
-    blockchain_address = models.ForeignKey( # If the address is on Ethereum specifically, create this record if it doesn't yet exist. If ENS address, look up the current owner of the address.
+    platform = models.CharField(
+        max_length=3, 
+        choices=Platforms.choices, 
+        default=Platforms.NONE
+    )
+    blockchain_address = models.ForeignKey( 
+        # Check if the "address" field is a valid blockchain or ENS address: if so, add a link to the corresponding database entry here.
+        # Currently only supporting Ethereum addresses. Create this record if it doesn't yet exist. 
+        # If ENS address, look up the current owner of the address and then do the above.
         BlockchainAddress,
         on_delete=models.CASCADE,
         null=True,
@@ -68,7 +102,8 @@ class DeepdaoAddress(models.Model):
     class Meta:
         db_table = "deepdao_addresses"
 
-        unique_together = ('address', 'type',)
+        unique_together = ('address', 'platform',)
 
     def __str__(self):
         return f"{self.platform}: {self.address}"
+'''

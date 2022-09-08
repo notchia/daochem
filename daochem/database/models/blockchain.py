@@ -1,6 +1,4 @@
 from django.db import models
-from django.db.models import Max
-from datetime import datetime
 
 from utils.blockchain import get_timestamp, unpack_compressed_call
 

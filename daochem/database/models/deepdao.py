@@ -31,28 +31,6 @@ class DeepdaoDao(models.Model):
         return self.name
 
 
-class DeepdaoAddressDeprecated(models.Model):
-    """TODO: port over what's in this table to the new format, if it's not already in there"""
-
-    id = models.CharField(primary_key=True, max_length=200, default="")
-    type = models.CharField(max_length=50, null=True)
-    url = models.URLField(max_length=200, null=True)
-    organization_name = models.CharField(max_length=50, default="")
-    description = models.CharField(max_length=50, null=True)
-    address = models.ForeignKey(
-        BlockchainAddress,
-        on_delete=models.CASCADE,
-        null=True,
-        related_name='deepdao_info'
-    )
-
-    class Meta:
-        db_table = "deepdao_addresses_deprecated"
-
-    def __str__(self):
-        return self.id
-
-'''
 class DeepdaoAddress(models.Model):
     """Sourced from `governance` field in each `organization` record"""
 
@@ -78,7 +56,7 @@ class DeepdaoAddress(models.Model):
     name = models.CharField(max_length=50)
     address = models.CharField(max_length=100)
     platform = models.CharField(
-        max_length=3, 
+        max_length=11, 
         choices=Platforms.choices, 
         default=Platforms.NONE
     )
@@ -106,4 +84,25 @@ class DeepdaoAddress(models.Model):
 
     def __str__(self):
         return f"{self.platform}: {self.address}"
-'''
+
+
+class DeepdaoAddressDeprecated(models.Model):
+    """TODO: port over what's in this table to the new format, if it's not already in there"""
+
+    id = models.CharField(primary_key=True, max_length=200, default="")
+    type = models.CharField(max_length=50, null=True)
+    url = models.URLField(max_length=200, null=True)
+    organization_name = models.CharField(max_length=50, default="")
+    description = models.CharField(max_length=50, null=True)
+    address = models.ForeignKey(
+        BlockchainAddress,
+        on_delete=models.CASCADE,
+        null=True,
+        related_name='deepdao_info_deprecated'
+    )
+
+    class Meta:
+        db_table = "deepdao_addresses_deprecated"
+
+    def __str__(self):
+        return self.id

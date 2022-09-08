@@ -1,5 +1,3 @@
-from msilib.schema import PublishComponent
-from statistics import linear_regression
 from django.db import models
 
 from daochem.database.models.blockchain import BlockchainAddress
@@ -98,15 +96,15 @@ class ContractParameter(models.Model):
         PRIVATE = 'R', 'private'
         DEFAULT = 'D', 'default'
     
-    contract_surface = models.ForeignKey(
-        ContractSurface, 
+    contract_object = models.ForeignKey(
+        ContractObject, 
         on_delete=models.SET_NULL, 
         null=True,
-        related_name="contract_objects"
+        related_name="contract_parameters"
     )
     name = models.CharField(max_length=100, default="")
     type_category = models.CharField(
-        max_length=1,
+        max_length=2,
         choices=TypeCategory.choices,
         null=True
     )
@@ -121,9 +119,8 @@ class ContractParameter(models.Model):
     line_numbers = models.CharField(max_length=100, default="")
     description = models.CharField(max_length=200, default="")
 
-
     class Meta:
-        db_table = "contract_objects"
+        db_table = "contract_parameters"
 
     def __str__(self):
         return self.name

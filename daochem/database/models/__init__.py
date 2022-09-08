@@ -1,4 +1,4 @@
 from .daos import *
 from .blockchain import *
-
-# TODO: update with actual models
+from .deepdao import *
+from .twitter import *
